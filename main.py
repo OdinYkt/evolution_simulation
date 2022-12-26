@@ -30,7 +30,7 @@ window.geometry('1600x1600')
 # for i in a:
 #     i.place(x=j*10,y=10)
 #     j += 10
-
+# just test
 size = 36  # 100x100 count of cells
 indent = 50
 crt_cell()
