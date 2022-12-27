@@ -20,17 +20,17 @@ def crt_live(count): #создание организмов
         cells[x][y].configure(background='red')
 
 
-def move(side,n):
+def move(side,n):       #стороны перепутаны, но задействованы все
     x, y = c_live[n][0], c_live[n][1]
-    if side == 0 and not([x, y + 1] in c_live): #вниз
+    if side == 0 and not([x - 1, y - 1] in c_live):
         cells[x][y].configure(background='#9c9192')
-        x += 0
-        y += 1
+        x += -1
+        y += -1
         c_live[n] = [x, y]
         cells[x][y].configure(background='red')
-    elif side == 1 and not([x + 1, y + 1] in c_live):
+    elif side == 1 and not([x - 1, y + 1] in c_live):
         cells[x][y].configure(background='#9c9192')
-        x += 1
+        x += -1
         y += 1
         c_live[n] = [x, y]
         cells[x][y].configure(background='red')
@@ -40,34 +40,34 @@ def move(side,n):
         y += 0
         c_live[n] = [x, y]
         cells[x][y].configure(background='red')
-    elif side == 3 and not ([x - 1, y - 1] in c_live):
+    elif side == 3 and not ([x, y - 1] in c_live):
         cells[x][y].configure(background='#9c9192')
-        x += -1
+        x += 0
         y += -1
         c_live[n] = [x, y]
         cells[x][y].configure(background='red')
-    elif side == 4 and not ([x - 1, y] in c_live):
-        cells[x][y].configure(background='#9c9192')
-        x += -1
-        y += 0
-        c_live[n] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 5 and not ([x - 1, y + 1] in c_live):
-        cells[x][y].configure(background='#9c9192')
-        x += -1
-        y += 1
-        c_live[n] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 6 and not ([x, y + 1] in c_live):
+    elif side == 4 and not ([x, y + 1] in c_live): #
         cells[x][y].configure(background='#9c9192')
         x += 0
         y += 1
         c_live[n] = [x, y]
         cells[x][y].configure(background='red')
-    elif side == 7 and not ([x + 1, y + 1] in c_live):
+    elif side == 5 and not ([x + 1, y - 1] in c_live):
+        cells[x][y].configure(background='#9c9192')
+        x += 1
+        y += -1
+        c_live[n] = [x, y]
+        cells[x][y].configure(background='red')
+    elif side == 6 and not ([x, y + 1] in c_live): #
         cells[x][y].configure(background='#9c9192')
         x += 1
         y += 1
+        c_live[n] = [x, y]
+        cells[x][y].configure(background='red')
+    elif side == 7 and not ([x + 1, y] in c_live):
+        cells[x][y].configure(background='#9c9192')
+        x += 1
+        y += 0
         c_live[n] = [x, y]
         cells[x][y].configure(background='red')
 
@@ -100,4 +100,10 @@ crt_cell()
 start_color()
 crt_live(int(input('Введите количество организмов:')))
 
-window.mainloop()
+while True: #test move
+    for i in range(8):
+        time.sleep(2)
+        move(i, 1)
+        window.update()
+
+
