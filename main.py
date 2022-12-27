@@ -2,9 +2,12 @@ from tkinter import *
 import time
 from random import randrange, shuffle
 
+background = '#9c9192'
+d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+
 def crt_cell(): #создание сетки отображения
     global cells
-    cells = [[Label(text=f'     ', width= 2, height= 1, background= '#9c9192') for i in range(size)] for j in range(size)]
+    cells = [[Label(text=f'     ', width=2, height=1, background=background) for i in range(size)] for j in range(size)]
     for i in range(size):
         for j in range(size):
             cells[i][j].place(x=indent+i*21, y=indent+j*22)
@@ -46,114 +49,47 @@ def create_food(count_of_food):
 
 
 def move(side,index_of_bot):       #стороны перепутаны, но задействованы все
-    c = index_of_bot
-    x, y = c_live[c][0], c_live[c][1]
-    if side == 0 and not([x - 1, y - 1] in c_live):
+    x, y = c_live[index_of_bot][0], c_live[index_of_bot][1]
+    xy = d.get(side)                                           #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    xy[0] += x
+    xy[1] += y
+    if xy not in c_live:
         cells[x][y].configure(background='#9c9192')
-        x += -1
-        y += -1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 1 and not([x - 1, y + 1] in c_live):
-        cells[x][y].configure(background='#9c9192')
-        x += -1
-        y += 1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 2 and not ([x - 1, y] in c_live):
-        cells[x][y].configure(background='#9c9192')
-        x += -1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 3 and not ([x, y - 1] in c_live):
-        cells[x][y].configure(background='#9c9192')
-        y += -1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 4 and not ([x, y + 1] in c_live): #
-        cells[x][y].configure(background='#9c9192')
-        y += 1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 5 and not ([x + 1, y - 1] in c_live):
-        cells[x][y].configure(background='#9c9192')
-        x += 1
-        y += -1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 6 and not ([x, y + 1] in c_live): #
-        cells[x][y].configure(background='#9c9192')
-        x += 1
-        y += 1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
-    elif side == 7 and not ([x + 1, y] in c_live):
-        cells[x][y].configure(background='#9c9192')
-        x += 1
-        c_live[c] = [x, y]
-        cells[x][y].configure(background='red')
+        c_live[index_of_bot] = xy
+        cells[xy[0]][xy[1]].configure(background='red')
 
 
 def eat(side, index_of_bot):
     x, y = c_live[index_of_bot][0], c_live[index_of_bot][1]
-    flag = False
-    if side == 8 and [x - 1, y - 1] in c_live:
-        index_of_victim = c_live.index([x - 1, y - 1])
-        flag = True
-    elif side == 9 and [x - 1, y + 1] in c_live:
-        index_of_victim = c_live.index([x - 1, y + 1])
-        flag = True
-    elif side == 10 and [x - 1, y] in c_live:
-        index_of_victim = c_live.index([x - 1, y])
-        flag = True
-    elif side == 11 and [x, y - 1] in c_live:
-        index_of_victim = c_live.index([x, y - 1])
-        flag = True
-    elif side == 12 and [x, y + 1] in c_live:
-        index_of_victim = c_live.index([x, y + 1])
-        flag = True
-    elif side == 13 and [x + 1, y - 1] in c_live:
-        index_of_victim = c_live.index([x + 1, y - 1])
-        flag = True
-    elif side == 14 and [x + 1, y + 1] in c_live:
-        index_of_victim = c_live.index([x + 1, y + 1])
-        flag = True
-    elif side == 15 and [x + 1, y] in c_live:
-        index_of_victim = c_live.index([x + 1, y])
-        flag = True
+    xy = d.get(side - 8)
+    xy[0] += x
+    xy[1] += y
+    if xy in c_live:                                            #поиск жертвы в виде бота
+        index_of_victim = c_live.index(xy)
 
-    if flag:
-        live[index_of_bot][64] += live[index_of_victim][64]  # забирает жизнь жертвы
-        c_live.pop(index_of_victim)  # удаляем жертву из координат
-        live.pop(index_of_bot)
+        live[index_of_bot][64] += live[index_of_victim][64]     # забирает жизнь жертвы
+        c_live.pop(index_of_victim)                             # удаляем жертву из координат
+        cells[xy[0]][xy[1]].configure(background=background)
+        live.pop(index_of_victim)
+    elif xy in food_coord:                                      #поиск жертвы в виде еды
+        index_of_victim = food_coord.index(xy)
 
-# def watch(side, n):
-#     ans = 1                         # 1 - empty, 2 - enemy, 3 - food, 4 - poison
-#     if side == 16:
-#         if [x - 1, y - 1] in c_live:
-#             ans = 2
-#         elif
-#     elif side == 17 and [x - 1, y + 1] in c_live:
-#         index_of_victim = c_live.index([x - 1, y + 1])
-#         flag = True
-#     elif side == 18 and [x - 1, y] in c_live:
-#         index_of_victim = c_live.index([x - 1, y])
-#         flag = True
-#     elif side == 19 and [x, y - 1] in c_live:
-#         index_of_victim = c_live.index([x, y - 1])
-#         flag = True
-#     elif side == 20 and [x, y + 1] in c_live:
-#         index_of_victim = c_live.index([x, y + 1])
-#         flag = True
-#     elif side == 21 and [x + 1, y - 1] in c_live:
-#         index_of_victim = c_live.index([x + 1, y - 1])
-#         flag = True
-#     elif side == 22 and [x + 1, y + 1] in c_live:
-#         index_of_victim = c_live.index([x + 1, y + 1])
-#         flag = True
-#     elif side == 23 and [x + 1, y] in c_live:
-#         index_of_victim = c_live.index([x + 1, y])
-#         flag = True
+        live[index_of_bot][64] += 10
+        food_coord.pop(index_of_victim)                         # удаляем жертву из координат
+        cells[xy[0]][xy[1]].configure(background=background)
+
+
+def watch(side, index_of_bot):
+    x, y = c_live[index_of_bot][0], c_live[index_of_bot][1]
+    xy = d.get(side-15)
+    xy[0] += x
+    xy[1] += y
+    ans = 0                         # 0 - empty, 1 - enemy, 2 - food, 3 - poison
+    if xy in c_live:
+        ans = 1
+    elif xy in food_coord:
+        ans = 2
+    return ans
 
 
 def step():
