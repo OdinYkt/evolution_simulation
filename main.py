@@ -49,92 +49,89 @@ def move(side, index_of_bot):                                   #для всех
     x, y = c_live[index_of_bot][0], c_live[index_of_bot][1]
     _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
     xy = _.copy()
+    old_x, old_y = x, y
     flag = True
-    print(f"step---- \n xy[0]= {xy[0]}, xy[1]= {xy[1]} \n x= {x}, y={y}")
     if xy[0] + x >= size:
-        xy[0] = 0
-        print(1, 'xy=', xy)
+        x = 0
         flag = False
     elif xy[0] + x < 0:
-        xy[0] = size - 1
-        print(2, 'xy=', xy)
+        x = size - 1
         flag = False
 
-    if xy[1] + y >= size:
-        xy[1] = 0
-        print(xy[0], xy[1])
-        print(3, 'xy=', xy)
+    if xy[1] + y >= size:                                       #ограничение верх-низ
         flag = False
     elif xy[1] + y < 0:
-        xy[1] = size - 1
-        print(4, 'xy=', xy)
         flag = False
 
     if flag:
-        xy[0] += x
-        xy[1] += y
-        print(0, 'xy=', xy)
+        x += xy[0]
+        y += xy[1]
 
-    print('xy=', xy)
     if xy not in c_live:
-        cells[x][y].configure(background=background)
-        c_live[index_of_bot] = xy
-        cells[xy[0]][xy[1]].configure(background='red')
+        cells[old_x][old_y].configure(background=background)
+        c_live[index_of_bot] = [x, y]
+        cells[x][y].configure(background='red')
 
 
 def eat(side, index_of_bot):
     x, y = c_live[index_of_bot][0], c_live[index_of_bot][1]
-    xy = d.get(side - 8)
-    xy[0] += x
-    xy[1] += y
-    if xy in c_live:                                            #поиск жертвы в виде бота
-        index_of_victim = c_live.index(xy)
-
-        live[index_of_bot][len_of_code] += live[index_of_victim][len_of_code]     # забирает жизнь жертвы
-        c_live.pop(index_of_victim)                             # удаляем жертву из координат
-        cells[xy[0]][xy[1]].configure(background=background)
+    _ = d.get(side - 8)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    xy = _.copy()
+    xy_of_victim = [x+xy[0], y+xy[1]]
+    if xy_of_victim in c_live:                                                      #поиск жертвы в виде бота
+        index_of_victim = c_live.index(xy_of_victim)
+        live[index_of_bot][len_of_code] += live[index_of_victim][len_of_code]       # забирает жизнь жертвы
+        c_live.pop(index_of_victim)                                                 # удаляем жертву из координат
+        cells[xy_of_victim[0]][xy_of_victim[1]].configure(background=background)
         live.pop(index_of_victim)
-    elif xy in food_coord:                                      #поиск жертвы в виде еды
-        index_of_victim = food_coord.index(xy)
-
+    elif xy_of_victim in food_coord:                                                #поиск жертвы в виде еды
+        index_of_victim = food_coord.index(xy_of_victim)
         live[index_of_bot][len_of_code + 1] += 10
-        food_coord.pop(index_of_victim)                         # удаляем жертву из координат
-        cells[xy[0]][xy[1]].configure(background=background)
+        food_coord.pop(index_of_victim)                                             # удаляем жертву из координат
+        cells[xy_of_victim[0]][xy_of_victim[1]].configure(background=background)
 
 
 def watch(side, index_of_bot):
     x, y = c_live[index_of_bot][0], c_live[index_of_bot][1]
-    xy = d.get(side - 15)
-    xy[0] += x
-    xy[1] += y
+    _ = d.get(side - 16)
+    xy = _.copy()
+    xy_check = [x+xy[0], y+xy[1]]
     ans = 0                                             # 0 - empty, 1 - enemy, 2 - food, 3 - poison
-    if xy in c_live:
+    if xy_check in c_live:
         ans = 1
-    elif xy in food_coord:
+    elif xy_check in food_coord:
         ans = 2
     return ans
 
 
 def step():
-    n_step = n_live
-    shuffle(n_step)
-    rdy = 0
-    c = [0 for _ in range(len(n_live))]                 #команды
+    pull = n_live                                       #очередь из индексов ботов
+    shuffle(pull)
+    rdy = 0                                             #счётчик готовности  while rdy<n
+    c = [0 for _ in range(len(n_live))]                 #УТК для каждого бота
     while rdy < n:
-        for k in n_step:                                #очередь
+        for k in pull:                                  #очередь
+            if c[k]>63:                                 #не даём выходить из пула команд 0..63
+                c[k] -= 63
             if 0 <= live[k][c[k]] <= 7:                 #live[k] - список 0-64
                 move(live[k][c[k]], k)                  #движение
                 rdy += 1
                 live[k][64] -= 1                        #1хп в ход
-                n_step.pop(k)
+                pull.pop(k)
             elif 8 <= live[k][c[k]] <= 15:              #есть
                 eat(live[k][c[k]], k)
                 rdy += 1
                 live[k][len_of_code] -= 1
-                n_step.pop(k)
+                pull.pop(k)
             elif 16 <= live[k][c[k]] <= 23:
-                if eat(live[k][c[k]], k) == 0:
-                    None
+                if watch(live[k][c[k]], k) == 0:
+                    c[k] += 1
+                elif watch(live[k][c[k]], k) == 1:
+                    c[k] += 2
+                elif watch(live[k][c[k]], k) == 2:
+                    c[k] += 3
+            elif 24 <= live[k][c[k]] <= 31:
+                None #деление
 
 background = '#9c9192'
 d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
@@ -156,7 +153,7 @@ create_food(10)
 while True:                     #test move
     for i in range(8):
         time.sleep(0.33)
-        move(3, 1)
+        move(1, 1)
         window.update()
 
 
