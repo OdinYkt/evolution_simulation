@@ -33,6 +33,56 @@ def crt_live(count):                                                    #соз�
         cells[x][y].configure(background='red')
 
 
+def cell_division(side, index_of_bot):
+    x, y = c_live[index_of_bot][0], c_live[index_of_bot][1]
+    _ = d.get(side - 24)
+    xy = _.copy()
+    flag = True
+
+    if xy[0] + x >= size:
+        x = 0
+        flag = False
+    elif xy[0] + x < 0:
+        x = size - 1
+        flag = False
+
+    if xy[1] + y >= size:                                       #ограничение верх-низ
+        flag = False
+    elif xy[1] + y < 0:
+        flag = False
+
+    if flag:
+        xy_new_cell = [x + xy[0], y + xy[1]]
+    else:
+        xy_new_cell = [x + xy[0], y]
+
+    if (xy_new_cell not in c_live) and (xy_new_cell not in food_coord):
+        c_live.append(xy_new_cell)
+        live.append(mutation(live[index_of_bot]))
+        n_live.append(n_live[-1]+1)
+        cells[xy_new_cell[0]][xy_new_cell[1]].configure(background='red')
+
+
+def mutation(old):
+    #кол-во исходов из 100
+    chance_of_mutation = 20
+    #кол-во изменений
+    power_of_mutation = 1
+    new = old.copy()
+    if randrange(0,100) in range(chance_of_mutation):
+        for i in range(power_of_mutation):
+            index_of_mutation = randrange(0, 64)
+            mut = randrange(0, 2)*(-1)
+            if new[index_of_mutation] + mut < 0:
+                new[index_of_mutation] = 64
+            elif new[index_of_mutation] + mut > 64:
+                new[index_of_mutation] = 0
+            else:
+                new[index_of_mutation] += randrange(0, 2)*(-1)
+    new[64] = 10
+    return new
+
+
 def create_food(count_of_food):
     global food_coord
     food_coord = []
@@ -104,15 +154,18 @@ def watch(side, index_of_bot):
     return ans
 
 
+
+
 def step():
-    pull = n_live                                       #очередь из индексов ботов
+    pull = n_live.copy()                                       #очередь из индексов ботов
     shuffle(pull)
     rdy = 0                                             #счётчик готовности  while rdy<n
     c = [0 for _ in range(len(n_live))]                 #УТК для каждого бота
     while rdy < n:
         for k in pull:                                  #очередь
-            if c[k]>63:                                 #не даём выходить из пула команд 0..63
+            if c[k] > 63:                                 #не даём выходить из пула команд 0..63
                 c[k] -= 63
+
             if 0 <= live[k][c[k]] <= 7:                 #live[k] - список 0-64
                 move(live[k][c[k]], k)                  #движение
                 rdy += 1
@@ -123,7 +176,7 @@ def step():
                 rdy += 1
                 live[k][len_of_code] -= 1
                 pull.pop(k)
-            elif 16 <= live[k][c[k]] <= 23:
+            elif 16 <= live[k][c[k]] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
                 if watch(live[k][c[k]], k) == 0:
                     c[k] += 1
                 elif watch(live[k][c[k]], k) == 1:
@@ -131,8 +184,21 @@ def step():
                 elif watch(live[k][c[k]], k) == 2:
                     c[k] += 3
             elif 24 <= live[k][c[k]] <= 31:
-                None #деление
+                cell_division(live[k][c[k]], k)
+                rdy += 1
+                live[k][64] -= 2                        #-2хп за деление
+                pull.pop(k)
+            elif live[k][c[k]] == 32:                   #проверка хп + ветвление
+                if live[k][64] > int(live[k][c[k]+1]*start_hp/(len_of_code-1)):
+                    c[k] += 1
+                else:
+                    c[k] += 2
+            else:                                       #значения выше 32 повышают УТК
+                c[k] += live[k][c[k]]
 
+
+def main():
+    None
 background = '#9c9192'
 d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
 
@@ -150,10 +216,13 @@ crt_cell()
 crt_live(int(input('Введите количество организмов:')))
 create_food(10)
 
-while True:                     #test move
-    for i in range(8):
-        time.sleep(0.33)
-        move(1, 1)
-        window.update()
+step_btn = Button(text='One step')
+step_btn.place(x=1000, y=100)
+
+step_lbl = Label(text='0', )
+step_btn.place(x=1000, y=50)
+window.mainloop()
+
+# main()
 
 
