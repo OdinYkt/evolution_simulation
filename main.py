@@ -131,14 +131,16 @@ def eat(side, index_of_bot):
     if xy_of_victim in c_live:                                                      #поиск жертвы в виде бота
         index_of_victim = c_live.index(xy_of_victim)
         live[index_of_bot][len_of_code] += live[index_of_victim][len_of_code]       # забирает жизнь жертвы
-        c_live.pop(index_of_victim)                                                 # удаляем жертву из координат
+        # удаляем жертву из координат
         cells[xy_of_victim[0]][xy_of_victim[1]].configure(background=background)
-        live.pop(index_of_victim)
+        c_live.remove(xy_of_victim)
+        live.remove(live[index_of_victim])
     elif xy_of_victim in food_coord:                                                #поиск жертвы в виде еды
         index_of_victim = food_coord.index(xy_of_victim)
         live[index_of_bot][len_of_code + 1] += 10
-        food_coord.pop(index_of_victim)                                             # удаляем жертву из координат
         cells[xy_of_victim[0]][xy_of_victim[1]].configure(background=background)
+        food_coord.remove(xy_of_victim)                                             # удаляем жертву из координат
+
 
 
 def watch(side, index_of_bot):
@@ -154,9 +156,8 @@ def watch(side, index_of_bot):
     return ans
 
 
-
-
 def step():
+    global num_steps, n_live
     pull = n_live.copy()                                       #очередь из индексов ботов
     shuffle(pull)
     rdy = 0                                             #счётчик готовности  while rdy<n
@@ -170,12 +171,12 @@ def step():
                 move(live[k][c[k]], k)                  #движение
                 rdy += 1
                 live[k][64] -= 1                        #1хп в ход
-                pull.pop(k)
+                pull.remove(k)
             elif 8 <= live[k][c[k]] <= 15:              #есть
                 eat(live[k][c[k]], k)
                 rdy += 1
                 live[k][len_of_code] -= 1
-                pull.pop(k)
+                pull.remove(k)
             elif 16 <= live[k][c[k]] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
                 if watch(live[k][c[k]], k) == 0:
                     c[k] += 1
@@ -187,7 +188,7 @@ def step():
                 cell_division(live[k][c[k]], k)
                 rdy += 1
                 live[k][64] -= 2                        #-2хп за деление
-                pull.pop(k)
+                pull.remove(k)
             elif live[k][c[k]] == 32:                   #проверка хп + ветвление
                 if live[k][64] > int(live[k][c[k]+1]*start_hp/(len_of_code-1)):
                     c[k] += 1
@@ -195,10 +196,22 @@ def step():
                     c[k] += 2
             else:                                       #значения выше 32 повышают УТК
                 c[k] += live[k][c[k]]
+    for k in n_live:
+        if live[k][64] < 1:
+            n_live.remove(k)
+            cells[c_live[k][0]][c_live[k][1]].configure(background=background)
+            c_live.remove(c_live[k])
+
+    new_n = len(n_live)
+    n_live = [_ for _ in range(new_n)]
+    num_steps += 1
+    step_lbl.configure(text=f"Count of steps:{num_steps}")
 
 
 def main():
-    None
+    create_food(10)
+    window.update()
+
 background = '#9c9192'
 d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
 
@@ -216,13 +229,17 @@ crt_cell()
 crt_live(int(input('Введите количество организмов:')))
 create_food(10)
 
-step_btn = Button(text='One step')
+step_btn = Button(text='One step', command=step)
 step_btn.place(x=1000, y=100)
 
-step_lbl = Label(text='0', )
-step_btn.place(x=1000, y=50)
+food_btn = Button(text='Add 10 food', command=main)
+food_btn.place(x=1100, y=100)
+num_steps = 0
+
+step_lbl = Label(window, text=f"Count of steps:{num_steps}", font=("Arial Bold", 20))
+step_lbl.place(x=1000, y=150)
+
 window.mainloop()
 
-# main()
 
 
