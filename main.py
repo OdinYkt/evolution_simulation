@@ -256,14 +256,21 @@ def step():
 
 
 def main():
-    step()
-    print('----------------------------------------------------------')
-    print(num_steps)
-    step_lbl.configure(text=f"Count of steps:{num_steps}")
-    for bots in live:
-        print(bots)
-    print()
-    window.update()
+    create_food(20)
+    flag = False
+    if flag:
+        flag = False
+    else:
+        flag = True
+    while flag:
+        if num_steps % 10 == 0 and num_steps > 0:
+            create_food(5)
+            flag = False
+        step()
+        step_lbl.configure(text=f"Count of steps:{num_steps-1}")
+        time.sleep(0.33)
+        window.update()
+
 
 
 
