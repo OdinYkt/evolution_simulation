@@ -23,12 +23,11 @@ def crt_cell(x, y):                   #создание поля отображ�
             cells[i][j].grid(row=i, column=j)
 
 
-def crt_live(count):                                                    #создание организмов
+def crt_live(count=10):                                                    #создание организмов
     global live
     #live - список словарей для каждого организма
     n = count
     hp = 10
-    live = []
     for _ in range(count):
         flag = True
         while flag:
@@ -38,12 +37,31 @@ def crt_live(count):                                                    #соз�
                 color = 'red'
                 cells[xy[0]][xy[1]]['background'] = color
         live.append({
-            'gen': [randrange(0, len_of_code) for i in range(len_of_code)],
+            'gen': [randrange(0, 16) for i in range(len_of_code)],#[randrange(0, len_of_code) for i in range(len_of_code)],
             'hp': hp,
             'coord': xy,
             'color': color,
-            'UTK': 0
+            'UTK': 0,
+            'anticycle': 0
         })
+
+
+def copy_live():            #0123 4567
+    hp = 10
+    _ = live.copy()
+    new_live = _
+    for bots in new_live:
+        flag = True
+        while flag:
+            xy = [randrange(0, x_size), randrange(0, y_size)]
+            if cells[xy[0]][xy[1]]['background'] == 'white':
+                flag = False
+                color = 'red'
+                cells[xy[0]][xy[1]]['background'] = color
+        bots['coord'] = xy
+    live.extend(new_live)
+
+
 
 #24..31
 def cell_division(bot, side):
@@ -68,7 +86,7 @@ def cell_division(bot, side):
         x += xy[0]
         y += xy[1]
 
-    if not (cells[x][y]['background'] == 'white'):
+    if cells[x][y]['background'] == 'white':
         live.append(mutation(bot))
         cells[x][y].configure(background='red')                 #Доработать цвет
 
@@ -95,13 +113,18 @@ def mutation(old):
 
 def create_food(count_of_food):
     global food_coord
-    food_coord = []
-    i = 0
-    while i < count_of_food:
-        xy = [randrange(0, x_size), randrange(0, y_size)]
-        if cells[xy[0]][xy[1]]['background'] == 'white':
-            cells[xy[0]][xy[1]].configure(background='green')
-            i += 1
+    if count_of_food == 'full':
+        for j in range(y_size):
+            for i in range(x_size):
+                if cells[i][j]['background'] == 'white':
+                    cells[i][j]['background'] = 'green'
+    else:
+        i = 0
+        while i < count_of_food:
+            xy = [randrange(0, x_size), randrange(0, y_size)]
+            if cells[xy[0]][xy[1]]['background'] == 'white':
+                cells[xy[0]][xy[1]].configure(background='green')
+                i += 1
 
 #0..7
 def move(bot, side):                                  #для всех функций стороны перепутаны, но задействованы все
@@ -167,6 +190,7 @@ def eat(bot, side):
                     cells[x][y]['background'] = 'white'
                     bot['hp'] += bots['hp']
                     live.remove(bots)
+                    break
 
  #16..23
 def watch(bot, side):
@@ -206,10 +230,22 @@ def step():
     pull = _
     shuffle(pull)
     rdy = 0
-    n = len(live)
+    n = len(pull)
+
+    for bots in pull:
+        # bots['UTK'] = 0
+        bots['anticycle'] = 0
+
     while rdy < n:
-        n = len(live)
+        n = len(pull)
         for bots in pull:                                #очередь
+            if bots['anticycle'] >= 15:
+                rdy += 1
+                bots['hp'] += -1                         # 1хп в ход
+                bots['UTK'] += 1
+                pull.remove(bots)
+                continue
+
             if bots['UTK'] > 63:                                 #не даём выходить из пула команд 0..63
                 bots['UTK'] -= 63
 
@@ -219,32 +255,36 @@ def step():
                 move(bots, bots['gen'][k])                  #движение
                 rdy += 1
                 bots['hp'] += -1                        #1хп в ход
+                bots['UTK'] += 1
                 pull.remove(bots)
             elif 8 <= bots['gen'][k] <= 15:              #есть
                 eat(bots, bots['gen'][k])
                 rdy += 1
                 bots['hp'] += -1
+                bots['UTK'] += 1
                 pull.remove(bots)
-            elif 16 <= bots['gen'][k] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
-                _ = watch(bots, bots['gen'][k])
-                if _ == 0:
-                    bots['UTK'] += 1
-                elif _ == 1:
-                    bots['UTK'] += 2
-                elif _ == 2:
-                    bots['UTK'] += 3
-            elif 24 <= bots['gen'][k] <= 31:
-                cell_division(bots, bots['gen'][k])
-                rdy += 1
-                bots['hp'] += -2                        #-2хп за деление
-                pull.remove(bots)
-            elif bots['gen'][k] == 32:                   #проверка хп + ветвление
-                if bots['hp'] > int((bots['gen'][k+1]+1)*start_hp/len_of_code):
-                    bots['UTK'] += 1
-                else:
-                    bots['UTK'] += 2
-            else:                                       #значения выше 32 повышают УТК
-                bots['UTK'] += bots['gen'][k]
+            else:
+                bots['anticycle'] += 1
+                if 16 <= bots['gen'][k] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
+                    _ = watch(bots, bots['gen'][k])
+                    if _ == 0:
+                        bots['UTK'] += 1
+                    elif _ == 1:
+                        bots['UTK'] += 2
+                    elif _ == 2:
+                        bots['UTK'] += 3
+                elif 24 <= bots['gen'][k] <= 31:
+                    cell_division(bots, bots['gen'][k])
+                    rdy += 1
+                    bots['hp'] += -2                        #-2хп за деление
+                    pull.remove(bots)
+                elif bots['gen'][k] == 32:                   #проверка хп + ветвление
+                    if bots['hp'] > int((bots['gen'][k+1]+1)*start_hp/len_of_code):
+                        bots['UTK'] += 1
+                    else:
+                        bots['UTK'] += 2
+                else:                                       #значения выше 32 повышают УТК
+                    bots['UTK'] += bots['gen'][k]
 
     for bots in live:
         if bots['hp'] < 0:
@@ -256,40 +296,48 @@ def step():
 
 
 def main():
-    create_food(20)
+    # create_food(20)
     flag = False
+
     if flag:
         flag = False
     else:
         flag = True
+
     while flag:
-        if num_steps % 10 == 0 and num_steps > 0:
+        if num_steps % 20 == 0 and num_steps > 0:
             create_food(5)
             flag = False
         step()
         step_lbl.configure(text=f"Count of steps:{num_steps-1}")
-        time.sleep(0.33)
+        live_lbl.configure(text=f'Count of lives:{len(live)}')
+        time.sleep(0.1)
         window.update()
 
 
 
 
 size = 36 # size x size count of cells
-
+live = []
 
 crt_cell(50, 80)
 crt_live(int(input('Введите количество организмов:')))
+create_food('full')
 # create_food(10)
 
-step_btn = Button(text='One step', command=main)
+step_btn = Button(text='STEP', command=main)
 step_btn.grid(row=51, column=81)
 #
-# food_btn = Button(text='Add 10 food', command=main, background='#ffffff')
-# food_btn.place(x=1100, y=100)
+food_btn = Button(text='Create_Live', command=crt_live)
+food_btn.grid(row=52, column=81)
+food_btn = Button(text='copy', command=copy_live)
+food_btn.grid(row=53, column=81)
 num_steps = 0
 
-step_lbl = Label(window, font=("Arial Bold", 14))
-step_lbl.grid(row=51, column=82)
+step_lbl = Label(window, font=("Arial Bold", 14), text='start')
+step_lbl.place(x=1600, y=200)
+live_lbl = Label(window, font=("Arial Bold", 14), text=f'Count of lives:{len(live)}')
+live_lbl.place(x=1600, y=400)
 
 window.mainloop()
 
