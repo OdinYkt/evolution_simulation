@@ -27,7 +27,7 @@ def crt_live(count=10):                                                    #со
     global live
     #live - список словарей для каждого организма
     n = count
-    hp = 10
+    energy = 10
     for _ in range(count):
         flag = True
         while flag:
@@ -36,18 +36,21 @@ def crt_live(count=10):                                                    #со
                 flag = False
                 color = 'red'
                 cells[xy[0]][xy[1]]['background'] = color
+                print(f'{xy} new red cell')
         live.append({
-            'gen': [randrange(0, 16) for i in range(len_of_code)],#[randrange(0, len_of_code) for i in range(len_of_code)],
-            'hp': hp,
+            'gen': [24 for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
+            'energy': energy,
             'coord': xy,
             'color': color,
             'UTK': 0,
-            'anticycle': 0
+            'anticycle': 0,
+            'age': 0
         })
 
 
 def copy_live():            #0123 4567
-    hp = 10
+    global live
+    energy = 10
     _ = live.copy()
     new_live = _
     for bots in new_live:
@@ -58,76 +61,16 @@ def copy_live():            #0123 4567
                 flag = False
                 color = 'red'
                 cells[xy[0]][xy[1]]['background'] = color
+                print(f'{xy} new red cell')
         bots['coord'] = xy
+        bots['energy'] = energy
+        bots['age'] = 0
     live.extend(new_live)
 
 
 
 #24..31
 def cell_division(bot, side):
-    coord = bot['coord'].copy()
-    _ = d.get(side - 24)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
-    xy = _.copy()
-    x, y = coord[0], coord[1]
-    flag = True
-    if xy[0] + x == x_size:
-        x = 0
-        flag = False
-    elif xy[0] + x < 0:
-        x = x_size - 1
-        flag = False
-
-    if xy[1] + y == y_size:                                       #ограничение верх-низ
-        flag = False
-    elif xy[1] + y < 0:
-        flag = False
-
-    if flag:
-        x += xy[0]
-        y += xy[1]
-
-    if cells[x][y]['background'] == 'white':
-        live.append(mutation(bot))
-        cells[x][y].configure(background='red')                 #Доработать цвет
-
-
-def mutation(old):
-    #кол-во исходов из 100
-    chance_of_mutation = 20
-    #кол-во изменений
-    power_of_mutation = 1
-    new = old.copy()
-    if randrange(0, 100) in range(chance_of_mutation):
-        for i in range(power_of_mutation):
-            index_of_mutation = randrange(0, 64)
-            mut = randrange(0, 2)*(-1)
-            if new['gen'][index_of_mutation] + mut < 0:
-                new['gen'][index_of_mutation] = 64
-            elif new['gen'][index_of_mutation] + mut > 63:
-                new['gen'][index_of_mutation] = 0
-            else:
-                new['gen'][index_of_mutation] += randrange(0, 2)*(-1)
-    new['hp'] = 5
-    return new
-
-
-def create_food(count_of_food):
-    global food_coord
-    if count_of_food == 'full':
-        for j in range(y_size):
-            for i in range(x_size):
-                if cells[i][j]['background'] == 'white':
-                    cells[i][j]['background'] = 'green'
-    else:
-        i = 0
-        while i < count_of_food:
-            xy = [randrange(0, x_size), randrange(0, y_size)]
-            if cells[xy[0]][xy[1]]['background'] == 'white':
-                cells[xy[0]][xy[1]].configure(background='green')
-                i += 1
-
-#0..7
-def move(bot, side):                                  #для всех функций стороны перепутаны, но задействованы все
     coord = bot['coord'].copy()
     _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
     xy = _.copy()
@@ -150,77 +93,163 @@ def move(bot, side):                                  #для всех функ�
         y += xy[1]
 
     if cells[x][y]['background'] == 'white':
+        new_bot = mutation(bot)
+        new_bot['coord'] = [x, y]
+        live.append(new_bot)
+        cells[x][y].configure(background='red')                 #Доработать цвет
+        print(f'{[x, y]} new red cell, {num_steps}')
+
+
+def mutation(old):
+    #кол-во исходов из 100
+    chance_of_mutation = 50
+    #кол-во изменений
+    power_of_mutation = 2
+    new = old.copy()
+    if randrange(0, 100) in range(chance_of_mutation):
+        for i in range(power_of_mutation):
+            index_of_mutation = randrange(0, 64)
+            mut = randrange(0, 2)*(-1)
+            if new['gen'][index_of_mutation] + mut < 0:
+                new['gen'][index_of_mutation] = 64
+            elif new['gen'][index_of_mutation] + mut > 63:
+                new['gen'][index_of_mutation] = 0
+            else:
+                new['gen'][index_of_mutation] += randrange(0, 2)*(-1)
+    new['energy'] = 10
+    new['age'] = 0
+    return new
+
+
+def create_food(count_of_food):
+    global food_coord
+    if count_of_food == 'full':
+        for j in range(y_size):
+            for i in range(x_size):
+                if cells[i][j]['background'] == 'white':
+                    cells[i][j]['background'] = 'green'
+    else:
+        i = 0
+        while i < count_of_food:
+            xy = [randrange(0, x_size), randrange(0, y_size)]
+            if cells[xy[0]][xy[1]]['background'] == 'white':
+                cells[xy[0]][xy[1]].configure(background='green')
+                i += 1
+
+
+def photosynth(bot):
+    # coord = bot['coord'].copy()
+    bot['energy'] += 2
+
+
+#0..7
+def move(bot, side):                                  #для всех функций стороны перепутаны, но задействованы все
+    coord = bot['coord'].copy()
+    _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    xy = _.copy()
+    x, y = coord[0], coord[1]
+    x_flag = True
+    y_flag = True
+    if xy[0] + x == x_size:
+        x = 0
+        x_flag = False
+    elif xy[0] + x < 0:
+        x = x_size - 1
+        x_flag = False
+
+    if xy[1] + y == y_size:                                       #ограничение верх-низ
+        y_flag = False
+    elif xy[1] + y < 0:
+        y_flag = False
+
+    if x_flag and y_flag:
+        x += xy[0]
+        y += xy[1]
+
+    ans = watch(bot, side)
+    if cells[x][y]['background'] == 'white' and y_flag:
         cells[coord[0]][coord[1]]['background'] = 'white'
         bot['coord'] = [x, y]
         cells[x][y].configure(background='red')                 #тут доработать с цветом
+        # print(f'{[x,y]} new red cell')
+    return ans
+
 
 #8..15
 def eat(bot, side):
     coord = bot['coord'].copy()
-    _ = d.get(side - 8)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
     xy = _.copy()
     x, y = coord[0], coord[1]
-
-    flag = True
+    result = 1
+    x_flag = True
+    y_flag = True
     if xy[0] + x == x_size:
         x = 0
-        flag = False
+        x_flag = False
     elif xy[0] + x < 0:
         x = x_size - 1
-        flag = False
+        x_flag = False
 
     if xy[1] + y == y_size:                                       #ограничение верх-низ
-        flag = False
+        y_flag = False
     elif xy[1] + y < 0:
-        flag = False
+        y_flag = False
 
-    if flag:
+    if y_flag and x_flag:
         x += xy[0]
         y += xy[1]
 
-    if not (cells[x][y]['background'] == 'white'):
-
+    if not (cells[x][y]['background'] == 'white') and y_flag:
+        result = 2
         if cells[x][y]['background'] == 'green':                            #поиск жертвы в виде еды
-            bot['hp'] += 5
+            bot['energy'] += 5
             cells[x][y]['background'] = 'white'
 
         else:                                                               #значит бот..
             for bots in live:
                 if bots['coord'] == [x, y]:
                     cells[x][y]['background'] = 'white'
-                    bot['hp'] += bots['hp']
+                    bot['energy'] += bots['energy']
                     live.remove(bots)
                     break
+
+    return result
+
 
  #16..23
 def watch(bot, side):
     coord = bot['coord'].copy()
-    _ = d.get(side - 16)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
     xy = _.copy()
     x, y = coord[0], coord[1]
 
-    flag = True
+    x_flag = True
+    y_flag = True
     if xy[0] + x == x_size:
         x = 0
-        flag = False
+        x_flag = False
     elif xy[0] + x < 0:
         x = x_size - 1
-        flag = False
+        x_flag = False
 
     if xy[1] + y == y_size:                                       #ограничение верх-низ
-        flag = False
+        y_flag = False
     elif xy[1] + y < 0:
-        flag = False
+        y_flag = False
 
-    if flag:
+    if x_flag and y_flag:
         x += xy[0]
         y += xy[1]
 
-    ans = 1                                             # 0 - empty, 1 - enemy, 2 - food, 3 - poison
-    if cells[x][y]['background'] == 'white':
-        ans = 0
-    elif cells[x][y]['background'] == 'green':
-        ans = 2
+    ans = 2                                             # 1 - empty, 2 - enemy, 3 - food, 4 - wall
+
+    if cells[x][y]['background'] == 'white' and y_flag:
+        ans = 1
+    elif cells[x][y]['background'] == 'green' and y_flag:
+        ans = 3
+    elif not y_flag:
+        ans = 4
     return ans
 
 
@@ -241,57 +270,64 @@ def step():
         for bots in pull:                                #очередь
             if bots['anticycle'] >= 15:
                 rdy += 1
-                bots['hp'] += -1                         # 1хп в ход
+                bots['energy'] += -step_energy                         # 1хп в ход
                 bots['UTK'] += 1
                 pull.remove(bots)
                 continue
 
             if bots['UTK'] > 63:                                 #не даём выходить из пула команд 0..63
-                bots['UTK'] -= 63
+                bots['UTK'] -= 64
 
             k = bots['UTK']
 
             if 0 <= bots['gen'][k] <= 7:                 #live[k] - список 0-64
-                move(bots, bots['gen'][k])                  #движение
+                ans = move(bots, bots['gen'][k])                  #движение
+
                 rdy += 1
-                bots['hp'] += -1                        #1хп в ход
-                bots['UTK'] += 1
+                bots['energy'] += -1                        #1хп в ход
+                bots['UTK'] += ans
                 pull.remove(bots)
             elif 8 <= bots['gen'][k] <= 15:              #есть
-                eat(bots, bots['gen'][k])
+                ans = eat(bots, bots['gen'][k] - 8)
+
                 rdy += 1
-                bots['hp'] += -1
+                bots['energy'] += -1
+                bots['UTK'] += ans
+                pull.remove(bots)
+            elif bots['gen'][k] == 24:
+                photosynth(bots)
+
+                rdy += 1
+                bots['energy'] += -1
                 bots['UTK'] += 1
                 pull.remove(bots)
             else:
                 bots['anticycle'] += 1
                 if 16 <= bots['gen'][k] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
-                    _ = watch(bots, bots['gen'][k])
-                    if _ == 0:
-                        bots['UTK'] += 1
-                    elif _ == 1:
-                        bots['UTK'] += 2
-                    elif _ == 2:
-                        bots['UTK'] += 3
-                elif 24 <= bots['gen'][k] <= 31:
-                    cell_division(bots, bots['gen'][k])
-                    rdy += 1
-                    bots['hp'] += -2                        #-2хп за деление
-                    pull.remove(bots)
-                elif bots['gen'][k] == 32:                   #проверка хп + ветвление
-                    if bots['hp'] > int((bots['gen'][k+1]+1)*start_hp/len_of_code):
+                    ans = watch(bots, bots['gen'][k] - 16)
+                    bots['UTK'] += ans
+                elif bots['gen'][k] == 25:
+                    k_next = k + 1
+                    if k+1 > 63:
+                        k_next -= 63
+
+                    if bots['energy'] >= (bots['gen'][k_next]+1/64)*10:
                         bots['UTK'] += 1
                     else:
                         bots['UTK'] += 2
-                else:                                       #значения выше 32 повышают УТК
+                else:                                       #значения выше 26(!) повышают УТК
                     bots['UTK'] += bots['gen'][k]
 
     for bots in live:
-        if bots['hp'] < 0:
+        bots['age'] += 1
+        if bots['energy'] <= 0 or bots['age'] >= 80:
             x = bots['coord'][0]
             y = bots['coord'][1]
             cells[x][y].configure(background='white')
             live.remove(bots)
+        elif bots['energy'] >= 40:
+            bots['energy'] -= 20
+            cell_division(bots, randrange(0, 8))
     num_steps += 1
 
 
@@ -319,10 +355,11 @@ def main():
 
 size = 36 # size x size count of cells
 live = []
+step_energy = 1
 
 crt_cell(50, 80)
 crt_live(int(input('Введите количество организмов:')))
-create_food('full')
+create_food(40)
 # create_food(10)
 
 step_btn = Button(text='STEP', command=main)
