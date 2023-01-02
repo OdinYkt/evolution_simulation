@@ -361,7 +361,11 @@ def step():
                 k_next = k + 1
                 if k + 1 > 63:
                     k_next -= 63
+                rdy += 1
+                bots['energy'] += -10
+                bots['UTK'] += 1
                 cell_division(bots, int(bots['gen'][k_next] % 8))
+                pull.remove(bots)
             else:
                 bots['anticycle'] += 1
                 if 16 <= bots['gen'][k] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
