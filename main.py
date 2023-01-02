@@ -1,7 +1,9 @@
 from tkinter import *
 import time
+from datetime import datetime
 from random import randrange, shuffle, choice
-
+import pathlib
+from pathlib import Path
 background = '#9c9192'
 d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
 
@@ -12,8 +14,19 @@ window = Tk()
 window.title("Симулирование эволюции")
 window.geometry('1900x1600')
 
-# def life_to_txt():
-#     with open()
+
+def life_to_txt():
+    name = str(datetime.now())
+    name = name.replace(':', '')
+    name = name.replace('-', '')
+    name = name.replace('.', '')
+    name = name.strip()
+    name = name + '.txt'
+    path = Path(r'C:\Users\Odinykt\PycharmProjects\pythonProject5\txt_live', name)
+    with open(path, 'w') as file:
+        for i in live:
+            file.write(str(i) + '\n')
+
 
 def get_hex(rgb):
     return "#%02x%02x%02x" % rgb
@@ -420,6 +433,8 @@ food_btn.grid(row=52, column=81)
 food_btn = Button(text='copy', command=copy_live)
 food_btn.grid(row=53, column=81)
 num_steps = 0
+txt_btn = Button(text='copy to txt', command=life_to_txt)
+txt_btn.grid(row=52, column=82)
 
 step_lbl = Label(window, font=("Arial Bold", 14), text='start')
 step_lbl.place(x=1600, y=200)
