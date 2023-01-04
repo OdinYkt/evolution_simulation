@@ -27,6 +27,15 @@ def life_to_txt():                              #переделать
         for i in live:
             file.write(str(i) + '\n')
 
+def txt_to_life(name):
+    path = Path(r'C:\Users\Odinykt\PycharmProjects\pythonProject5\txt_live', name)
+    live.clear()
+    with open(path, 'r') as file:
+        for lines in file:
+            live.append(eval(lines))
+    for bots in live:
+        xy = bots['coord']
+        cells[xy[0]][xy[1]]['background'] = bots['color']
 
 def get_hex(rgb):
     return "#%02x%02x%02x" % rgb
@@ -78,7 +87,6 @@ def crt_live(count=10):                                                    #со
 
 def copy_live():            #0123 4567
     global live
-    energy = 10
     _ = live.copy()
     new_live = _
     for bots in new_live:
@@ -90,7 +98,7 @@ def copy_live():            #0123 4567
                 cells[xy[0]][xy[1]]['background'] = get_hex((100, 100, 100))
                 print(f'{xy} new red cell')
         bots['coord'] = xy
-        bots['energy'] = energy
+        bots['energy'] = 40
         bots['age'] = 0
     live.extend(new_live)
 
@@ -152,9 +160,9 @@ def mutation(old, chance):
         new['g'] = 100
         new['b'] = 100
         new['color'] = get_hex((100, 100, 100))
-    new['energy'] = 10
+    new['energy'] = 30
     new['age'] = 0
-    new['UKT'] = 0
+    new['UTK'] = 0
     return new
 
 
@@ -215,12 +223,14 @@ def move(bot, side):                                  #для всех функ�
         x += xy[0]
         y += xy[1]
 
-    ans = watch(bot, side)
+    ans = 1
     if cells[x][y]['background'] == 'white' and y_flag:
         cells[coord[0]][coord[1]]['background'] = 'white'
         bot['coord'] = [x, y]
         cells[x][y]['background'] = bot['color']           #тут доработать с цветом
         # print(f'{[x,y]} new red cell')
+    else:
+        ans = watch(bot, side) + 1
     return ans
 
 
@@ -253,24 +263,36 @@ def eat(bot, side):
         result = 2
         if cells[x][y]['background'] == food_color:                            #поиск жертвы в виде еды
             bot['energy'] += 5
+            bot['age'] -= 10
+            if bot['age'] < 0:
+                bot['age'] = 0
+
             change_b = 5
             if bot['b'] + change_b >= 255:
                 bot['b'] = 255
             else:
                 bot['b'] += change_b
-            cells[x][y]['background'] = 'white'
+            # cells[x][y]['background'] = 'white'     временно
 
         else:                                                               #значит бот..
+            dif = 0
             for bots in live:
                 if bots['coord'] == [x, y]:
+                    for i in range(len(bots['gen'])):
+                        dif += bots['gen'][i] - bot['gen'][i]
+                    if abs(dif) < 1:
+                        break
+
                     cells[x][y]['background'] = 'white'
                     bot['energy'] += bots['energy'] + 5
+                    bot['age'] -= 5
                     live.remove(bots)
                     change_r = 10
                     if bot['r'] + change_r >= 255:
                         bot['r'] = 255
                     else:
                         bot['r'] += change_r
+                    result = 3
                     break
 
     return result
@@ -396,16 +418,16 @@ def step():
                 else:                                       #значения выше 26(!) повышают УТК
                     bots['UTK'] += bots['gen'][k]
 
-    for bots in live:
+    for bots in live:                                       #условия выживания бота
         bots['age'] += 1
         bots['color'] = get_hex((bots['r'], bots['g'], bots['b']))
         x = bots['coord'][0]
         y = bots['coord'][1]
         cells[x][y]['background'] = bots['color']
-        if bots['energy'] <= 0 or bots['age'] >= 80:
+        if bots['energy'] <= 0 or bots['age'] >= 100:
             cells[x][y].configure(background='white')
             live.remove(bots)
-        elif bots['energy'] >= 40:
+        elif bots['energy'] >= 60:
             bots['energy'] -= 20
             cell_division(bots, randrange(0, 8))
     num_steps += 1
@@ -441,9 +463,8 @@ food_color = get_hex((150, 150, 255))
 
 crt_cell(50, 80)
 crt_live(int(input('Введите количество организмов:')))
-create_food(40)
-# create_food(10)
-
+# create_food(40)
+txt_to_life('20230104 215114563581.txt')
 step_btn = Button(text='STEP', command=button)
 step_btn.grid(row=51, column=81)
 #
