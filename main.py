@@ -421,7 +421,7 @@ def main():
 
 
 def button():
-    start_simulation = False
+    global start_simulation
     if start_simulation:
         start_simulation = False
     else:
@@ -455,10 +455,11 @@ num_steps = 0
 txt_btn = Button(text='copy to txt', command=life_to_txt)
 txt_btn.grid(row=52, column=82)
 
-step_lbl = Label(window, font=("Arial Bold", 14), text='start')
+step_lbl = Label(window, font=("Arial Bold", 14), text='start/stop')
 step_lbl.place(x=1600, y=200)
 live_lbl = Label(window, font=("Arial Bold", 14), text=f'Count of lives:{len(live)}')
 live_lbl.place(x=1600, y=400)
+start_simulation = False
 window.mainloop()
 
 
