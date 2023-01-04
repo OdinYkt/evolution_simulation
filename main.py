@@ -15,7 +15,7 @@ window.title("Симулирование эволюции")
 window.geometry('1900x1600')
 
 
-def life_to_txt():
+def life_to_txt():                              #переделать
     name = str(datetime.now())
     name = name.replace(':', '')
     name = name.replace('-', '')
@@ -103,6 +103,8 @@ def cell_division(bot, side, mutation_on = True):
     xy = _.copy()
     x, y = coord[0], coord[1]
     flag = True
+    ch_of_mut = 50
+    ch_if_cell = 10
     if xy[0] + x == x_size:
         x = 0
         flag = False
@@ -121,23 +123,20 @@ def cell_division(bot, side, mutation_on = True):
 
     if cells[x][y]['background'] == 'white':
         if mutation_on:
-            new_bot = mutation(bot)
+            new_bot = mutation(bot, ch_of_mut)
         else:
-            new_bot = bot
-            new_bot['energy'] = 10
-            new_bot['age'] = 0
-            new_bot['UKT'] = 0
+            new_bot = mutation(bot, ch_if_cell)
         new_bot['coord'] = [x, y]
         live.append(new_bot)
         cells[x][y]['background'] = new_bot['color']                 #Доработать цвет
 
 
 
-def mutation(old):
+def mutation(old, chance):
     #кол-во исходов из 100
-    chance_of_mutation = 50
+    chance_of_mutation = chance
     #кол-во изменений
-    power_of_mutation = 2
+    power_of_mutation = 1
     new = old.copy()
     if randrange(0, 100) in range(chance_of_mutation):
         for i in range(power_of_mutation):
@@ -179,7 +178,11 @@ def create_food(count_of_food=10):
 
 def photosynth(bot):
     # coord = bot['coord'].copy()
-    bot['energy'] += 2
+    top = 20            # boost energy +5
+    if 35 > bot['coord'][0] > 15:
+        bot['energy'] += 5
+    else:
+        bot['energy'] += 2
 
     change_g = 1
     if bot['g']+change_g >= 255:
@@ -298,14 +301,24 @@ def watch(bot, side):
         x += xy[0]
         y += xy[1]
 
-    ans = 2                                             # 1 - empty, 2 - enemy, 3 - food, 4 - wall
+    ans = 5                                       # 1 - empty, 2 - food, 3 - wall, 4 - enemy,  5 - ally
 
     if cells[x][y]['background'] == 'white' and y_flag:
         ans = 1
     elif cells[x][y]['background'] == food_color and y_flag:
-        ans = 3
+        ans = 2
     elif not y_flag:
-        ans = 4
+        ans = 3
+    else:
+        dif = 0
+        for bots in live:
+            if bots['coord'] == [x, y]:
+                for i in range(len(bots['gen'])):
+                    dif += bots['gen'][i] - bot['gen'][i]
+                break
+        if abs(dif) > 1:
+            ans = 4
+
     return ans
 
 
@@ -399,22 +412,24 @@ def step():
 
 
 def main():
-    # create_food(20)
-    flag = False
+    step()
+    step_lbl.configure(text=f"Count of steps:{num_steps - 1}")
+    live_lbl.configure(text=f'Count of lives:{len(live)}')
+    time.sleep(0.1)
+    window.update()
 
-    if flag:
-        flag = False
+
+
+def button():
+    start_simulation = False
+    if start_simulation:
+        start_simulation = False
     else:
-        flag = True
+        start_simulation = True
 
-    while flag:
-        if num_steps % 20 == 0 and num_steps > 0:
-            flag = False
-        step()
-        step_lbl.configure(text=f"Count of steps:{num_steps-1}")
-        live_lbl.configure(text=f'Count of lives:{len(live)}')
-        time.sleep(0.1)
-        window.update()
+    while start_simulation:
+        main()
+        continue
 
 
 
@@ -429,7 +444,7 @@ crt_live(int(input('Введите количество организмов:'))
 create_food(40)
 # create_food(10)
 
-step_btn = Button(text='STEP', command=main)
+step_btn = Button(text='STEP', command=button)
 step_btn.grid(row=51, column=81)
 #
 food_btn = Button(text='Create_food', command=create_food)
@@ -444,7 +459,6 @@ step_lbl = Label(window, font=("Arial Bold", 14), text='start')
 step_lbl.place(x=1600, y=200)
 live_lbl = Label(window, font=("Arial Bold", 14), text=f'Count of lives:{len(live)}')
 live_lbl.place(x=1600, y=400)
-
 window.mainloop()
 
 
