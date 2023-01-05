@@ -61,9 +61,8 @@ def crt_live(count=10):                                                    #со
                 flag = False
                 start_color = get_hex((100, 100, 100))
                 cells[xy[0]][xy[1]]['background'] = start_color
-                print(f'{xy} new red cell')
         live.append({
-            'gen': [randrange(0, 64) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
+            'gen': [randrange(0, len_of_code-1) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
             'energy': energy,
             'coord': xy,
             'color': start_color,
@@ -102,31 +101,19 @@ def cell_division(bot, side, start_utk = 0,mutation_on = True):
     xy = _.copy()
     x, y = coord[0], coord[1]
     flag = True
-    ch_of_mut = 50
-    ch_if_cell = 10
-    if xy[0] + x == x_size:
-        x = 0
-        flag = False
-    elif xy[0] + x < 0:
-        x = x_size - 1
-        flag = False
+    ch_of_mut = 25
+    ch_if_cell = 0
 
-    if xy[1] + y == y_size:                                       #ограничение верх-низ
-        flag = False
-    elif xy[1] + y < 0:
-        flag = False
+    x += xy[0]
+    y += xy[1]
 
-    if flag:
-        x += xy[0]
-        y += xy[1]
-
-    if cells[x][y]['background'] == 'white':
+    if cells[x][y]['background'] == 'white' and bot['energy'] >= 20:
         if mutation_on:
             new_bot = mutation(bot, ch_of_mut)
         else:
             new_bot = mutation(bot, ch_if_cell)
         new_bot['coord'] = [x, y]
-        new_bot['UKT'] = start_utk
+        new_bot['UTK'] = start_utk
         cells[x][y]['background'] = new_bot['color']
         live.append(new_bot)
         ans = 2
@@ -141,7 +128,7 @@ def mutation(old, chance):
     new = old.copy()
     if randrange(0, 100) in range(chance_of_mutation):
         for i in range(power_of_mutation):
-            index_of_mutation = randrange(0, 64)
+            index_of_mutation = randrange(0, len_of_code-1)
             mut = choice([-1, 1])
             if new['gen'][index_of_mutation] + mut < 0:
                 new['gen'][index_of_mutation] = 63
@@ -149,11 +136,16 @@ def mutation(old, chance):
                 new['gen'][index_of_mutation] = 0
             else:
                 new['gen'][index_of_mutation] += mut
+        new['r'] = 50
+        new['g'] = 50
+        new['b'] = 50
+        new['color'] = get_hex((50, 50, 50))
+    else:
         new['r'] = 100
         new['g'] = 100
         new['b'] = 100
         new['color'] = get_hex((100, 100, 100))
-    new['energy'] = 30
+    new['energy'] = 15
     new['age'] = 0
     return new
 
@@ -181,43 +173,31 @@ def photosynth(bot):
         bot['energy'] += 5
         ans = 1
     else:
-        bot['energy'] += 2
+        # bot['energy'] += 2
         ans = 2
 
-    change_g = 1
-    if bot['g']+change_g >= 255:
-        bot['g'] = 255
-    else:
-        bot['g'] += change_g
-    bot['color'] = get_hex((bot['r'], bot['g'], bot['b']))
+    if ans == 1:
+        change_g = 1
+        if bot['g']+change_g >= 255:
+            bot['g'] = 255
+        else:
+            bot['g'] += change_g
+        bot['color'] = get_hex((bot['r'], bot['g'], bot['b']))
 
     return ans
-#0..7
-def move(bot, side):                                  #для всех функций стороны перепутаны, но задействованы все
+
+
+def move(bot, side):
     coord = bot['coord'].copy()
-    _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    _ = d.get(side)
     xy = _.copy()
     x, y = coord[0], coord[1]
-    x_flag = True
-    y_flag = True
-    if xy[0] + x == x_size:
-        x = 0
-        x_flag = False
-    elif xy[0] + x < 0:
-        x = x_size - 1
-        x_flag = False
 
-    if xy[1] + y == y_size:                                       #ограничение верх-низ
-        y_flag = False
-    elif xy[1] + y < 0:
-        y_flag = False
-
-    if x_flag and y_flag:
-        x += xy[0]
-        y += xy[1]
+    x += xy[0]
+    y += xy[1]
 
     ans = 1
-    if cells[x][y]['background'] == 'white' and y_flag:
+    if cells[x][y]['background'] == 'white':
         cells[coord[0]][coord[1]]['background'] = 'white'
         bot['coord'] = [x, y]
         cells[x][y]['background'] = bot['color']
@@ -226,32 +206,17 @@ def move(bot, side):                                  #для всех функ�
     return ans
 
 
-#8..15
 def eat(bot, side):
     coord = bot['coord'].copy()
     _ = d.get(side)
     xy = _.copy()
     x, y = coord[0], coord[1]
     result = 1
-    x_flag = True
-    y_flag = True
-    if xy[0] + x == x_size:
-        x = 0
-        x_flag = False
-    elif xy[0] + x < 0:
-        x = x_size - 1
-        x_flag = False
 
-    if xy[1] + y == y_size:
-        y_flag = False
-    elif xy[1] + y < 0:
-        y_flag = False
+    x += xy[0]
+    y += xy[1]
 
-    if y_flag and x_flag:
-        x += xy[0]
-        y += xy[1]
-
-    if not (cells[x][y]['background'] == 'white') and y_flag:
+    if not (cells[x][y]['background'] == 'white'):
         if cells[x][y]['background'] == food_color:                            #поиск жертвы в виде еды
             result = 2
             bot['energy'] += 5
@@ -278,9 +243,9 @@ def eat(bot, side):
                         break
 
                     # cells[x][y]['background'] = 'white'
-                    bot['energy'] += 10
+                    bot['energy'] += 20
                     bot['age'] -= 1
-                    bots['energy'] -= 10
+                    bots['energy'] -= 20
                     # live.remove(bots)
                     change_r = 10
                     if bot['r'] + change_r >= 255:
@@ -293,39 +258,21 @@ def eat(bot, side):
     return result
 
 
- #16..23
 def watch(bot, side):
     coord = bot['coord'].copy()
     _ = d.get(side)
     xy = _.copy()
     x, y = coord[0], coord[1]
 
-    x_flag = True
-    y_flag = True
-    if xy[0] + x == x_size:
-        x = 0
-        x_flag = False
-    elif xy[0] + x < 0:
-        x = x_size - 1
-        x_flag = False
+    x += xy[0]
+    y += xy[1]
 
-    if xy[1] + y == y_size:                                       #ограничение верх-низ
-        y_flag = False
-    elif xy[1] + y < 0:
-        y_flag = False
+    ans = 3                                       # 1 - empty, 2 - food, 3 - wall, 4 - enemy,  5 - ally
 
-    if x_flag and y_flag:
-        x += xy[0]
-        y += xy[1]
-
-    ans = 4                                       # 1 - empty, 2 - food, 3 - wall, 4 - enemy,  5 - ally
-
-    if cells[x][y]['background'] == 'white' and y_flag:
+    if cells[x][y]['background'] == 'white':
         ans = 1
-    elif cells[x][y]['background'] == food_color and y_flag:
+    elif cells[x][y]['background'] == food_color:
         ans = 2
-    elif not y_flag:
-        ans = 3
     else:
         dif = []
         for bots in live:
@@ -335,7 +282,7 @@ def watch(bot, side):
                         dif.append(bots['gen'][i] - bot['gen'][i])
                 break
         if dif == [1] or dif == [-1] or dif == []:
-            ans = 5
+            ans = 4
 
     return ans
 
@@ -362,8 +309,8 @@ def step():
                 pull.remove(bots)
                 continue
 
-            if bots['UTK'] > 63:            #не даём выходить УТК из списка команд 0..63
-                bots['UTK'] -= 64
+            if bots['UTK'] >= len_of_code:            #не даём выходить УТК из списка команд 0..63
+                bots['UTK'] -= len_of_code
 
             k = bots['UTK']             #для удобства
             # bots['gen']  - список 0-64
@@ -391,14 +338,14 @@ def step():
             elif bots['gen'][k] == 26:
                 k_next = k + 1
                 k_next_ = k + 2
-                if k_next > 63:
-                    k_next -= 63
-                if k_next_ > 63:
-                    k_next_ -= 63
+                if k_next >= len_of_code:
+                    k_next -= len_of_code
+                if k_next_ >= len_of_code:
+                    k_next_ -= len_of_code
                 ans = cell_division(bots, int(bots['gen'][k_next] % 8), bots['gen'][k_next_])
 
                 rdy += 1
-                bots['energy'] += -10
+                bots['energy'] -= 20
                 bots['UTK'] += ans
                 pull.remove(bots)
             else:
@@ -411,10 +358,12 @@ def step():
                     if k_next > 63:
                         k_next -= 63
 
-                    if bots['energy'] >= bots['gen'][k_next]:
+                    if bots['energy'] > bots['gen'][k_next]:
                         bots['UTK'] += 2
-                    else:
+                    elif bots['energy'] > bots['gen'][k_next]:
                         bots['UTK'] += 3
+                    else:
+                        bots['UTK'] += 4
                 else:                                       #значения повышают УТК
                     bots['UTK'] += bots['gen'][k]
 
@@ -422,16 +371,18 @@ def step():
         bots['age'] += 1
         x = bots['coord'][0]
         y = bots['coord'][1]
-
-        if bots['energy'] <= 0 or bots['age'] >= 100:
-            cells[x][y]['background'] = 'white'
-            live.remove(bots)
-        elif bots['energy'] >= 60:              #принудительное деление в случайную сторону
+        if bots['energy'] >= 60:              #принудительное деление в случайную сторону
             bots['energy'] -= 20
             cell_division(bots, randrange(0, 8))
-        else:
-            bots['color'] = get_hex((bots['r'], bots['g'], bots['b']))
-            cells[x][y]['background'] = bots['color']
+        elif bots['energy'] <= 0 or bots['age'] >= 100:
+            cells[x][y]['background'] = 'white'
+            live.remove(bots)
+    for bots in live:
+        x = bots['coord'][0]
+        y = bots['coord'][1]
+        bots['color'] = get_hex((bots['r'], bots['g'], bots['b']))
+        cells[x][y]['background'] = bots['color']
+
     num_steps += 1
 
 
@@ -439,7 +390,8 @@ def main():
     step()
     step_lbl.configure(text=f"Count of steps:{num_steps - 1}")
     live_lbl.configure(text=f'Count of lives:{len(live)}')
-    time.sleep(0.1)
+    if len(live) < 500:
+        time.sleep(0.1)
     window.update()
 
 
@@ -486,7 +438,7 @@ live_lbl.place(x=1600, y=400)
 #rules
 step_energy = 1
 food_color = get_hex((150, 150, 255))
-len_of_code = 64
+len_of_code = 128
 start_hp = 10
 
 #start simulation
