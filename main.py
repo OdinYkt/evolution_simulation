@@ -4,15 +4,6 @@ from datetime import datetime
 from random import randrange, shuffle, choice
 import pathlib
 from pathlib import Path
-background = '#9c9192'
-d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
-
-len_of_code = 64
-start_hp = 10
-
-window = Tk()
-window.title("Симулирование эволюции")
-window.geometry('1900x1600')
 
 
 def life_to_txt():                              #переделать
@@ -72,7 +63,7 @@ def crt_live(count=10):                                                    #со
                 cells[xy[0]][xy[1]]['background'] = start_color
                 print(f'{xy} new red cell')
         live.append({
-            'gen': [24 for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
+            'gen': [randrange(0, 64) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
             'energy': energy,
             'coord': xy,
             'color': start_color,
@@ -96,7 +87,6 @@ def copy_live():            #0123 4567
             if cells[xy[0]][xy[1]]['background'] == 'white':
                 flag = False
                 cells[xy[0]][xy[1]]['background'] = get_hex((100, 100, 100))
-                print(f'{xy} new red cell')
         bots['coord'] = xy
         bots['energy'] = 40
         bots['age'] = 0
@@ -106,6 +96,7 @@ def copy_live():            #0123 4567
 
 #24..31
 def cell_division(bot, side, mutation_on = True):
+    ans = 1
     coord = bot['coord'].copy()
     _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
     xy = _.copy()
@@ -135,9 +126,10 @@ def cell_division(bot, side, mutation_on = True):
         else:
             new_bot = mutation(bot, ch_if_cell)
         new_bot['coord'] = [x, y]
-        live.append(new_bot)
         cells[x][y]['background'] = new_bot['color']                 #Доработать цвет
-
+        live.append(new_bot)
+        ans = 2
+    return ans
 
 
 def mutation(old, chance):
@@ -185,12 +177,12 @@ def create_food(count_of_food=10):
 
 
 def photosynth(bot):
-    # coord = bot['coord'].copy()
-    top = 20            # boost energy +5
     if 35 > bot['coord'][0] > 15:
         bot['energy'] += 5
+        ans = 1
     else:
         bot['energy'] += 2
+        ans = 2
 
     change_g = 1
     if bot['g']+change_g >= 255:
@@ -199,6 +191,7 @@ def photosynth(bot):
         bot['g'] += change_g
     bot['color'] = get_hex((bot['r'], bot['g'], bot['b']))
 
+    return ans
 #0..7
 def move(bot, side):                                  #для всех функций стороны перепутаны, но задействованы все
     coord = bot['coord'].copy()
@@ -260,10 +253,10 @@ def eat(bot, side):
         y += xy[1]
 
     if not (cells[x][y]['background'] == 'white') and y_flag:
-        result = 2
         if cells[x][y]['background'] == food_color:                            #поиск жертвы в виде еды
+            result = 2
             bot['energy'] += 5
-            bot['age'] -= 10
+            bot['age'] -= 1
             if bot['age'] < 0:
                 bot['age'] = 0
 
@@ -272,7 +265,6 @@ def eat(bot, side):
                 bot['b'] = 255
             else:
                 bot['b'] += change_b
-            # cells[x][y]['background'] = 'white'     временно
 
         else:                                                               #значит бот..
             dif = 0
@@ -349,87 +341,90 @@ def step():
     _ = live.copy()
     pull = _
     shuffle(pull)
-    rdy = 0
+
+    rdy = 0         #counter for ready of bots
     n = len(pull)
 
-    for bots in pull:
-        # bots['UTK'] = 0
+    for bots in pull:           #сброс счётчика цикла
         bots['anticycle'] = 0
 
-    while rdy < n:
+    while rdy < n:          #шаг кончается, когда все боты закончили команды
         n = len(pull)
-        for bots in pull:                                #очередь
-            if bots['anticycle'] >= 15:
+        for bots in pull:
+            if bots['anticycle'] >= 15:             #бот также может зависнуть в цикле, для этого проверяем счётчик
                 rdy += 1
-                bots['energy'] += -step_energy                         # 1хп в ход
-                bots['UTK'] += 1
+                bots['energy'] -= step_energy                         # 1хп в ход
+                bots['UTK'] = 0
                 pull.remove(bots)
                 continue
 
-            if bots['UTK'] > 63:                                 #не даём выходить из пула команд 0..63
+            if bots['UTK'] > 63:            #не даём выходить УТК из списка команд 0..63
                 bots['UTK'] -= 64
 
-            k = bots['UTK']
-
-            if 0 <= bots['gen'][k] <= 7:                 #live[k] - список 0-64
-                ans = move(bots, bots['gen'][k])                  #движение
+            k = bots['UTK']             #для удобства
+            # bots['gen']  - список 0-64
+            if 0 <= bots['gen'][k] <= 7:
+                ans = move(bots, bots['gen'][k])
 
                 rdy += 1
-                bots['energy'] += -1                        #1хп в ход
+                bots['energy'] -= step_energy
                 bots['UTK'] += ans
                 pull.remove(bots)
             elif 8 <= bots['gen'][k] <= 15:              #есть
                 ans = eat(bots, bots['gen'][k] - 8)
 
                 rdy += 1
-                bots['energy'] += -1
+                bots['energy'] -= step_energy
                 bots['UTK'] += ans
                 pull.remove(bots)
             elif bots['gen'][k] == 24:
-                photosynth(bots)
+                ans = photosynth(bots)
 
                 rdy += 1
-                bots['energy'] += -1
-                bots['UTK'] += 1
+                bots['energy'] -= step_energy
+                bots['UTK'] += ans
                 pull.remove(bots)
             elif bots['gen'][k] == 26:
                 k_next = k + 1
-                if k + 1 > 63:
+                if k_next > 63:
                     k_next -= 63
+                ans = cell_division(bots, int(bots['gen'][k_next] % 8))
+
                 rdy += 1
                 bots['energy'] += -10
-                bots['UTK'] += 1
-                cell_division(bots, int(bots['gen'][k_next] % 8))
+                bots['UTK'] += ans
                 pull.remove(bots)
             else:
                 bots['anticycle'] += 1
                 if 16 <= bots['gen'][k] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
                     ans = watch(bots, bots['gen'][k] - 16)
                     bots['UTK'] += ans
-                elif bots['gen'][k] == 25:
+                elif bots['gen'][k] == 25:                  #проверка хп
                     k_next = k + 1
-                    if k+1 > 63:
+                    if k_next > 63:
                         k_next -= 63
 
-                    if bots['energy'] >= int(bots['gen'][k_next] % 10):
-                        bots['UTK'] += 1
-                    else:
+                    if bots['energy'] >= bots['gen'][k_next]:
                         bots['UTK'] += 2
-                else:                                       #значения выше 26(!) повышают УТК
+                    else:
+                        bots['UTK'] += 3
+                else:                                       #значения повышают УТК
                     bots['UTK'] += bots['gen'][k]
 
     for bots in live:                                       #условия выживания бота
         bots['age'] += 1
-        bots['color'] = get_hex((bots['r'], bots['g'], bots['b']))
         x = bots['coord'][0]
         y = bots['coord'][1]
-        cells[x][y]['background'] = bots['color']
+
         if bots['energy'] <= 0 or bots['age'] >= 100:
-            cells[x][y].configure(background='white')
+            cells[x][y]['background'] = 'white'
             live.remove(bots)
-        elif bots['energy'] >= 60:
+        elif bots['energy'] >= 60:              #принудительное деление в случайную сторону
             bots['energy'] -= 20
             cell_division(bots, randrange(0, 8))
+        else:
+            bots['color'] = get_hex((bots['r'], bots['g'], bots['b']))
+            cells[x][y]['background'] = bots['color']
     num_steps += 1
 
 
@@ -454,32 +449,45 @@ def button():
         continue
 
 
+#dict for move(), eat() and watch()
+d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
 
-
-size = 36 # size x size count of cells
-live = []
-step_energy = 1
-food_color = get_hex((150, 150, 255))
-
+#create window
+window = Tk()
+window.title("Симулирование эволюции")
+window.geometry('1920x1600')
+#create cell
 crt_cell(50, 80)
-crt_live(int(input('Введите количество организмов:')))
-# create_food(40)
-txt_to_life('20230104 215114563581.txt')
-step_btn = Button(text='STEP', command=button)
+live = []
+
+#buttons and labels
+step_btn = Button(text='START/STOP', command=button)
 step_btn.grid(row=51, column=81)
-#
-food_btn = Button(text='Create_food', command=create_food)
-food_btn.grid(row=52, column=81)
-food_btn = Button(text='copy', command=copy_live)
+
+food_btn = Button(text='copy life', command=copy_live)
 food_btn.grid(row=53, column=81)
-num_steps = 0
+
 txt_btn = Button(text='copy to txt', command=life_to_txt)
 txt_btn.grid(row=52, column=82)
 
-step_lbl = Label(window, font=("Arial Bold", 14), text='start/stop')
+step_lbl = Label(window, font=("Arial Bold", 14), text='Count of steps')
 step_lbl.place(x=1600, y=200)
 live_lbl = Label(window, font=("Arial Bold", 14), text=f'Count of lives:{len(live)}')
 live_lbl.place(x=1600, y=400)
+
+
+#rules
+step_energy = 1
+food_color = get_hex((150, 150, 255))
+len_of_code = 64
+start_hp = 10
+
+#start simulation
+create_food(40)
+num_steps = 0
+crt_live(int(input('Введите количество организмов:')))
+
+
 start_simulation = False
 window.mainloop()
 
