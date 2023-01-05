@@ -95,7 +95,7 @@ def copy_live():            #0123 4567
 
 
 #24..31
-def cell_division(bot, side, mutation_on = True):
+def cell_division(bot, side, start_utk = 0,mutation_on = True):
     ans = 1
     coord = bot['coord'].copy()
     _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
@@ -126,7 +126,8 @@ def cell_division(bot, side, mutation_on = True):
         else:
             new_bot = mutation(bot, ch_if_cell)
         new_bot['coord'] = [x, y]
-        cells[x][y]['background'] = new_bot['color']                 #Доработать цвет
+        new_bot['UKT'] = start_utk
+        cells[x][y]['background'] = new_bot['color']
         live.append(new_bot)
         ans = 2
     return ans
@@ -154,7 +155,6 @@ def mutation(old, chance):
         new['color'] = get_hex((100, 100, 100))
     new['energy'] = 30
     new['age'] = 0
-    new['UTK'] = 0
     return new
 
 
@@ -163,7 +163,7 @@ def create_food(count_of_food=10):
     if count_of_food == 'full':
         for j in range(y_size):
             for i in range(x_size):
-                if cells[i][j]['background'] == 'white':
+                if i == 0 or j == 0 or i == 49 or j == 79:
                     cells[i][j]['background'] = food_color
                     cells[i][j]['text'] = '.'
     else:
@@ -220,8 +220,7 @@ def move(bot, side):                                  #для всех функ�
     if cells[x][y]['background'] == 'white' and y_flag:
         cells[coord[0]][coord[1]]['background'] = 'white'
         bot['coord'] = [x, y]
-        cells[x][y]['background'] = bot['color']           #тут доработать с цветом
-        # print(f'{[x,y]} new red cell')
+        cells[x][y]['background'] = bot['color']
     else:
         ans = watch(bot, side) + 1
     return ans
@@ -230,7 +229,7 @@ def move(bot, side):                                  #для всех функ�
 #8..15
 def eat(bot, side):
     coord = bot['coord'].copy()
-    _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    _ = d.get(side)
     xy = _.copy()
     x, y = coord[0], coord[1]
     result = 1
@@ -243,7 +242,7 @@ def eat(bot, side):
         x = x_size - 1
         x_flag = False
 
-    if xy[1] + y == y_size:                                       #ограничение верх-низ
+    if xy[1] + y == y_size:
         y_flag = False
     elif xy[1] + y < 0:
         y_flag = False
@@ -267,24 +266,28 @@ def eat(bot, side):
                 bot['b'] += change_b
 
         else:                                                               #значит бот..
-            dif = 0
+            dif = []
             for bots in live:
                 if bots['coord'] == [x, y]:
+
                     for i in range(len(bots['gen'])):
-                        dif += bots['gen'][i] - bot['gen'][i]
-                    if abs(dif) < 1:
+                        if bots['gen'][i] - bot['gen'][i] != 0:
+                            dif.append(bots['gen'][i] - bot['gen'][i])
+                    if dif == [1] or dif == [-1] or dif == []:
+                        result = 3
                         break
 
-                    cells[x][y]['background'] = 'white'
-                    bot['energy'] += bots['energy'] + 5
-                    bot['age'] -= 5
-                    live.remove(bots)
+                    # cells[x][y]['background'] = 'white'
+                    bot['energy'] += 10
+                    bot['age'] -= 1
+                    bots['energy'] -= 10
+                    # live.remove(bots)
                     change_r = 10
                     if bot['r'] + change_r >= 255:
                         bot['r'] = 255
                     else:
                         bot['r'] += change_r
-                    result = 3
+                    result = 4
                     break
 
     return result
@@ -293,7 +296,7 @@ def eat(bot, side):
  #16..23
 def watch(bot, side):
     coord = bot['coord'].copy()
-    _ = d.get(side)                                            #d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1, 1], 7: [-1, -1]}
+    _ = d.get(side)
     xy = _.copy()
     x, y = coord[0], coord[1]
 
@@ -315,7 +318,7 @@ def watch(bot, side):
         x += xy[0]
         y += xy[1]
 
-    ans = 5                                       # 1 - empty, 2 - food, 3 - wall, 4 - enemy,  5 - ally
+    ans = 4                                       # 1 - empty, 2 - food, 3 - wall, 4 - enemy,  5 - ally
 
     if cells[x][y]['background'] == 'white' and y_flag:
         ans = 1
@@ -324,14 +327,15 @@ def watch(bot, side):
     elif not y_flag:
         ans = 3
     else:
-        dif = 0
+        dif = []
         for bots in live:
             if bots['coord'] == [x, y]:
                 for i in range(len(bots['gen'])):
-                    dif += bots['gen'][i] - bot['gen'][i]
+                    if bots['gen'][i] - bot['gen'][i] != 0:
+                        dif.append(bots['gen'][i] - bot['gen'][i])
                 break
-        if abs(dif) > 1:
-            ans = 4
+        if dif == [1] or dif == [-1] or dif == []:
+            ans = 5
 
     return ans
 
@@ -354,7 +358,7 @@ def step():
             if bots['anticycle'] >= 15:             #бот также может зависнуть в цикле, для этого проверяем счётчик
                 rdy += 1
                 bots['energy'] -= step_energy                         # 1хп в ход
-                bots['UTK'] = 0
+                bots['UTK'] += 1
                 pull.remove(bots)
                 continue
 
@@ -386,9 +390,12 @@ def step():
                 pull.remove(bots)
             elif bots['gen'][k] == 26:
                 k_next = k + 1
+                k_next_ = k + 2
                 if k_next > 63:
                     k_next -= 63
-                ans = cell_division(bots, int(bots['gen'][k_next] % 8))
+                if k_next_ > 63:
+                    k_next_ -= 63
+                ans = cell_division(bots, int(bots['gen'][k_next] % 8), bots['gen'][k_next_])
 
                 rdy += 1
                 bots['energy'] += -10
@@ -483,7 +490,7 @@ len_of_code = 64
 start_hp = 10
 
 #start simulation
-create_food(40)
+create_food('full')
 num_steps = 0
 crt_live(int(input('Введите количество организмов:')))
 
