@@ -112,6 +112,7 @@ def cell_division(bot, side, start_utk = 0,mutation_on = True):
             new_bot = mutation(bot, ch_of_mut)
         else:
             new_bot = mutation(bot, ch_if_cell)
+
         new_bot['coord'] = [x, y]
         new_bot['UTK'] = start_utk
         cells[x][y]['background'] = new_bot['color']
