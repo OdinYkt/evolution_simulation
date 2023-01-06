@@ -1,7 +1,7 @@
 from main import *
 
 zones = [[0, 10], [10, 20], [20, 30], [30, 40], [40, 50], [50, 60], [60, 70], [70, 79]]
-def step(zone):
+def multi_step(zone):
     current_zone = zones[zone]
     start_y = current_zone[0]
     end_y = current_zone[1]
@@ -84,19 +84,3 @@ def step(zone):
                         bots['UTK'] += 3
                 else:                                       #значения повышают УТК
                     bots['UTK'] += bots['gen'][k]
-
-    # for bots in live:                                       #условия выживания бота
-    #     bots['age'] += 1
-    #     x = bots['coord'][0]
-    #     y = bots['coord'][1]
-
-    #     if bots['energy'] <= 0 or bots['age'] >= 100:
-    #         cells[x][y]['background'] = 'white'
-    #         live.remove(bots)
-    #     elif bots['energy'] >= 60:              #принудительное деление в случайную сторону
-    #         bots['energy'] -= 20
-    #         cell_division(bots, randrange(0, 8))
-    #     else:
-    #         bots['color'] = get_hex((bots['r'], bots['g'], bots['b']))
-    #         cells[x][y]['background'] = bots['color']
-    # num_steps += 1
