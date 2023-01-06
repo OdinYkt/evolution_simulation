@@ -72,7 +72,7 @@ def crt_live(count=10):                                                    #со
                 cells[xy[0]][xy[1]]['background'] = start_color
                 print(f'{xy} new red cell')
         start_live.append({
-            'gen': [randrange(0, 64) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
+            'gen': [0 for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
             'energy': energy,
             'coord': xy,
             'color': start_color,
@@ -362,12 +362,10 @@ def multi_step(zone, _live, fake_cells):
     start_y = current_zone[0]
     end_y = current_zone[1]
     _ = _live.copy()
-    current_live = _
+    current_live = []
     for bots in current_live:
-        if bots['coord'][1] not in range(start_y, end_y+1):
-            current_live.remove(bots)
-        if bots['rdy'] == 1:
-            current_live.remove(bots)
+        if bots['coord'][1] in range(start_y, end_y+1) and bots['rdy'] == 0:
+            current_live.append(bots)
 
     _ = current_live.copy()
     pull = _
@@ -462,25 +460,30 @@ def step(_live, fake_cells):
         y = bots['coord'][1]
 
         if bots['energy'] <= 0 or bots['age'] >= 100:
-            fake_cells[x][y] = 'white'
+            cells[x][y]['background'] = 'white'
             current_live.remove(bots)
         elif bots['energy'] >= 60:              #принудительное деление в случайную сторону
             bots['energy'] -= 20
             cell_division(bots, randrange(0, 8), current_live, fake_cells)
         else:
             bots['color'] = get_hex((bots['r'], bots['g'], bots['b']))
-            fake_cells[x][y] = bots['color']
+            cells[x][y]['background'] = bots['color']
     for j in range(y_size):
         for i in range(x_size):
             cells[i][j]['background'] = fake_cells[i][j]
     num_steps += 1
+    window.update()
+    print('len of current= ', len(current_live))
+    print(current_live)
     return current_live
 
 
 def main():
     global live
     fake_cells = crt_fake_cells(cells, food_coord)
-    step(live,  fake_cells)
+    live = step(live,  fake_cells)
+    print('len of live= ', len(live))
+    print(live)
     step_lbl.configure(text=f"Count of steps:{num_steps - 1}")
     live_lbl.configure(text=f'Count of lives:{len(live)}')
     time.sleep(0.1)
