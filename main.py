@@ -8,18 +8,18 @@ from pathlib import Path
 
 def life_to_txt():                              #переделать
     name = str(datetime.now())
-    name = name.replace(':', '')
-    name = name.replace('-', '')
-    name = name.replace('.', '')
+    for i in ':-.':
+        name = name.replace(i, '')
     name = name.strip()
     name = name + '.txt'
-    path = Path(r'C:\Users\Odinykt\PycharmProjects\pythonProject5\txt_live', name)
+
+    path = Path(pathlib.Path().absolute(), 'txt_live', name)
     with open(path, 'w') as file:
         for i in live:
             file.write(str(i) + '\n')
 
 def txt_to_life(name):
-    path = Path(r'C:\Users\Odinykt\PycharmProjects\pythonProject5\txt_live', name)
+    path = Path(pathlib.Path().absolute(), 'txt_live', name)
     live.clear()
     with open(path, 'r') as file:
         for lines in file:
@@ -73,24 +73,6 @@ def crt_live(count=10):                                                    #со
             'g': 100,
             'b': 100
         })
-
-
-def copy_live():            #0123 4567
-    global live
-    _ = live.copy()
-    new_live = _
-    for bots in new_live:
-        flag = True
-        while flag:
-            xy = [randrange(0, x_size), randrange(0, y_size)]
-            if cells[xy[0]][xy[1]]['background'] == 'white':
-                flag = False
-                cells[xy[0]][xy[1]]['background'] = get_hex((100, 100, 100))
-        bots['coord'] = xy
-        bots['energy'] = 40
-        bots['age'] = 0
-    live.extend(new_live)
-
 
 
 #24..31
@@ -435,9 +417,6 @@ live = []
 step_btn = Button(text='START/STOP', command=button)
 step_btn.grid(row=51, column=81)
 
-food_btn = Button(text='copy life', command=copy_live)
-food_btn.grid(row=53, column=81)
-
 txt_btn = Button(text='copy to txt', command=life_to_txt)
 txt_btn.grid(row=52, column=82)
 
@@ -453,14 +432,17 @@ food_color = get_hex((150, 150, 255))
 len_of_code = 128
 start_hp = 10
 
-#start simulation
+print('Добро пожаловать в симуляцию эволюции v0.1')
+
 create_food('full')
 num_steps = 0
 crt_live(int(input('Введите количество организмов:')))
-
+print('Создание окна отображения(5-10 сек)')
 
 start_simulation = False
 window.mainloop()
+
+
 
 
 
