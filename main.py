@@ -59,19 +59,19 @@ def crt_live(count=10):                                                    #со
             xy = [randrange(0, x_size), randrange(0, y_size)]
             if cells[xy[0]][xy[1]]['background'] == 'white':
                 flag = False
-                start_color = get_hex((100, 100, 100))
+                start_color = get_hex((200, 200, 200))
                 cells[xy[0]][xy[1]]['background'] = start_color
         live.append({
-            'gen': [randrange(0, len_of_code) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
+            'gen': [24 for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
             'energy': energy,
             'coord': xy,
             'color': start_color,
             'UTK': 0,
             'anticycle': 0,
             'age': 0,
-            'r': 100,
-            'g': 100,
-            'b': 100
+            'r': 200,
+            'g': 200,
+            'b': 200
         })
 
 
@@ -125,15 +125,15 @@ def mutation(old, chance):
                 new['gen'][index_of_mutation] = 0
             else:
                 new['gen'][index_of_mutation] += mut
-        new['r'] = 50
-        new['g'] = 50
-        new['b'] = 50
-        new['color'] = get_hex((50, 50, 50))
+        new['r'] = 180
+        new['g'] = 180
+        new['b'] = 180
+        new['color'] = get_hex((180, 180, 180))
     else:
-        new['r'] = 100
-        new['g'] = 100
-        new['b'] = 100
-        new['color'] = get_hex((100, 100, 100))
+        new['r'] = 200
+        new['g'] = 200
+        new['b'] = 200
+        new['color'] = get_hex((200, 200, 200))
     new['energy'] = 15
     new['age'] = 0
     return new
@@ -160,15 +160,23 @@ def create_food(count_of_food=10):
 def photosynth(bot):
     if 50 > bot['coord'][0] > 30:
         bot['energy'] += 20
-        bot['age'] -= 5
+        # bot['age'] -= 5
         ans = 1
     else:
         # bot['energy'] += 2
         ans = 2
 
     if ans == 1:
-        change_g = 1
-        if bot['g']+change_g >= 255:
+        change_g = 4
+        if bot['r'] - change_g <= 30:
+            bot['r'] = 30
+        else:
+            bot['r'] -= change_g
+        if bot['b'] - change_g <= 30:
+            bot['b'] = 30
+        else:
+            bot['b'] -= change_g
+        if bot['g'] + change_g >= 255:
             bot['g'] = 255
         else:
             bot['g'] += change_g
@@ -210,9 +218,9 @@ def eat(bot, side):
         if cells[x][y]['background'] == food_color:                            #поиск жертвы в виде еды
             result = 2
             bot['energy'] += 5
-            bot['age'] -= 1
-            if bot['age'] < 0:
-                bot['age'] = 0
+            # bot['age'] -= 1
+            # if bot['age'] < 0:
+            #     bot['age'] = 0
 
             change_b = 5
             if bot['b'] + change_b >= 255:
@@ -234,7 +242,7 @@ def eat(bot, side):
 
                     cells[x][y]['background'] = 'white'
                     bot['energy'] += int(bots['energy']/10) + 20
-                    bot['age'] -= 1
+                    # bot['age'] -= 1
                     live.remove(bots)
                     # change_r = 10
                     # if bot['r'] + change_r >= 255:
