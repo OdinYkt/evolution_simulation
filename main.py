@@ -62,7 +62,7 @@ def crt_live(count=10):                                                    #со
                 start_color = get_hex((100, 100, 100))
                 cells[xy[0]][xy[1]]['background'] = start_color
         live.append({
-            'gen': [randrange(0, len_of_code-1) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
+            'gen': [randrange(0, len_of_code) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
             'energy': energy,
             'coord': xy,
             'color': start_color,
@@ -126,11 +126,17 @@ def mutation(old, chance):
     chance_of_mutation = chance
     #кол-во изменений
     power_of_mutation = 1
+    if old['b'] > 150 or old['r'] > 150:
+        power_of_mutation = 3
+        chance += 10
+    elif old['energy'] > 200:
+        power_of_mutation = 3
+        chance += 10
     new = old.copy()
     if randrange(0, 100) in range(chance_of_mutation):
         for i in range(power_of_mutation):
             index_of_mutation = randrange(0, len_of_code-1)
-            mut = choice([-1, 1])
+            mut = choice([-power_of_mutation, power_of_mutation])
             if new['gen'][index_of_mutation] + mut < 0:
                 new['gen'][index_of_mutation] = 63
             elif new['gen'][index_of_mutation] + mut > 63:
@@ -170,8 +176,9 @@ def create_food(count_of_food=10):
 
 
 def photosynth(bot):
-    if 35 > bot['coord'][0] > 15:
-        bot['energy'] += 5
+    if 50 > bot['coord'][0] > 30:
+        bot['energy'] += 20
+        bot['age'] -= 5
         ans = 1
     else:
         # bot['energy'] += 2
@@ -243,16 +250,16 @@ def eat(bot, side):
                         result = 3
                         break
 
-                    # cells[x][y]['background'] = 'white'
-                    bot['energy'] += 20
+                    cells[x][y]['background'] = 'white'
+                    bot['energy'] += int(bots['energy']/10) + 20
                     bot['age'] -= 1
-                    bots['energy'] -= 20
-                    # live.remove(bots)
-                    change_r = 10
-                    if bot['r'] + change_r >= 255:
-                        bot['r'] = 255
-                    else:
-                        bot['r'] += change_r
+                    live.remove(bots)
+                    # change_r = 10
+                    # if bot['r'] + change_r >= 255:
+                    bot['r'] = 255
+                    bot['g'] = 0
+                    # else:
+                    #     bot['r'] += change_r
                     result = 4
                     break
 
@@ -303,9 +310,8 @@ def step():
     while rdy < n:          #шаг кончается, когда все боты закончили команды
         n = len(pull)
         for bots in pull:
-            if bots['anticycle'] >= 15:             #бот также может зависнуть в цикле, для этого проверяем счётчик
+            if bots['anticycle'] >= 30:             #бот также может зависнуть в цикле, для этого проверяем счётчик
                 rdy += 1
-                bots['energy'] -= step_energy                         # 1хп в ход
                 bots['UTK'] += 1
                 pull.remove(bots)
                 continue
@@ -319,21 +325,18 @@ def step():
                 ans = move(bots, bots['gen'][k])
 
                 rdy += 1
-                bots['energy'] -= step_energy
                 bots['UTK'] += ans
                 pull.remove(bots)
             elif 8 <= bots['gen'][k] <= 15:              #есть
                 ans = eat(bots, bots['gen'][k] - 8)
 
                 rdy += 1
-                bots['energy'] -= step_energy
                 bots['UTK'] += ans
                 pull.remove(bots)
             elif bots['gen'][k] == 24:
                 ans = photosynth(bots)
 
                 rdy += 1
-                bots['energy'] -= step_energy
                 bots['UTK'] += ans
                 pull.remove(bots)
             elif bots['gen'][k] == 26:
@@ -346,7 +349,8 @@ def step():
                 ans = cell_division(bots, int(bots['gen'][k_next] % 8), bots['gen'][k_next_])
 
                 rdy += 1
-                bots['energy'] -= 20
+                if ans == 2:
+                    bots['energy'] -= 20
                 bots['UTK'] += ans
                 pull.remove(bots)
             else:
@@ -368,14 +372,21 @@ def step():
                 else:                                       #значения повышают УТК
                     bots['UTK'] += bots['gen'][k]
 
-    for bots in live:                                       #условия выживания бота
+    for bots in live:
+        if bots['age'] < 0:
+            bots['age'] = 0
+
         bots['age'] += 1
+
+        bots['energy'] -= step_energy
         x = bots['coord'][0]
         y = bots['coord'][1]
-        if bots['energy'] >= 60:              #принудительное деление в случайную сторону
-            bots['energy'] -= 20
-            cell_division(bots, randrange(0, 8))
-        elif bots['energy'] <= 0 or bots['age'] >= 100:
+        if bots['energy'] >= 120:
+            ans = cell_division(bots, randrange(0, 8), randrange(0, 127))
+            if ans == 2:                              #принудительное деление в случайную сторону
+                bots['energy'] -= 20
+
+        if bots['energy'] <= 0 or bots['energy'] >= 1000 or bots['age'] >= 100:
             cells[x][y]['background'] = 'white'
             live.remove(bots)
     for bots in live:
