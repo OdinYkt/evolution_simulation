@@ -142,7 +142,7 @@ def create_food(count_of_food=10):
     if count_of_food == 'full':
         for j in range(y_size):
             for i in range(x_size):
-                if i == 0 or j == 0 or i == 49 or j == 79:
+                if i == 0 or j == 0 or i == x_size-1 or j == y_size-1:
                     cells[i][j]['background'] = food_color
                     cells[i][j]['text'] = '.'
                     food_coord.append([i,j])
@@ -493,9 +493,10 @@ d = {0: [1, 0], 1: [1, 1], 2: [1, -1], 3: [0, 1], 4: [0, -1], 5: [-1, 0], 6: [-1
 #create window
 window = Tk()
 window.title("Симулирование эволюции")
-window.geometry('1920x1600')
+# window.geometry('1920x1600')
+window.geometry('1800x1000')
 #create cell
-cells = crt_cell(50, 80)
+cells = crt_cell(40, 80)
 live = []
 ###############
 #buttons and labels
