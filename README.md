@@ -3,12 +3,22 @@
 Small project 4fun.\
  World of bots which are controlled by the gen. Gen it's array of numbers [0..127]. 
 
+## Libraries
+```python
+from tkinter import *
+import time
+from datetime import datetime
+from random import randrange, shuffle, choice
+import pathlib
+from pathlib import Path
+```
 ## Command of bots
 0..7 move \
 8..15 eat\
 16..23 watch\
 24 photosynth\
-25 if/else\
+25 if/else energy\
+27 if/else age\
 26 cell division\
 other numbers (26..127)
 ```python
