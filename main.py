@@ -39,16 +39,17 @@ def get_rgb(hex):
 
 
 def crt_cell(x, y):                   #создание поля отображения
-    global cells, x_size, y_size
+    global x_size, y_size
     x_size = x
     y_size = y
     cells = [[Label(window, text=f'', width=2, height=1, background='white') for j in range(y_size)] for i in range(x_size)]
     for j in range(y_size):
         for i in range(x_size):
             cells[i][j].grid(row=i, column=j)
+    return cells
 
 
-def crt_live(count=10):                                                    #создание организмов
+def crt_live(count):                                                    #создание организмов
     global live
     #live - список словарей для каждого организма
     n = count
@@ -62,7 +63,7 @@ def crt_live(count=10):                                                    #со
                 start_color = get_hex((200, 200, 200))
                 cells[xy[0]][xy[1]]['background'] = start_color
         live.append({
-            'gen': [24 for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
+            'gen': [randrange(0, len_of_code) for i in range(len_of_code)],     #[randrange(0, len_of_code) for i in range(len_of_code)],
             'energy': energy,
             'coord': xy,
             'color': start_color,
@@ -108,10 +109,7 @@ def mutation(old, chance):
     chance_of_mutation = chance
     #кол-во изменений
     power_of_mutation = 1
-    if old['b'] > 150 or old['r'] > 150:
-        power_of_mutation = 3
-        chance += 10
-    elif old['energy'] > 200:
+    if old['energy'] > 200:
         power_of_mutation = 3
         chance += 10
     new = old.copy()
@@ -140,13 +138,14 @@ def mutation(old, chance):
 
 
 def create_food(count_of_food=10):
-    global food_coord
+    food_coord = []
     if count_of_food == 'full':
         for j in range(y_size):
             for i in range(x_size):
                 if i == 0 or j == 0 or i == 49 or j == 79:
                     cells[i][j]['background'] = food_color
                     cells[i][j]['text'] = '.'
+                    food_coord.append([i,j])
     else:
         i = 0
         while i < count_of_food:
@@ -155,11 +154,12 @@ def create_food(count_of_food=10):
                 cells[xy[0]][xy[1]]['background'] = food_color
                 cells[xy[0]][xy[1]]['text'] = '.'
                 i += 1
-
+                food_coord.append([xy[0],xy[1]])
+    return food_coord
 
 def photosynth(bot):
-    if 50 > bot['coord'][0] > 35 or 15 > bot['coord'][0] > 0:
-        bot['energy'] += 20
+    if 50 > bot['coord'][0] > 30 or 20 > bot['coord'][0] > 0:
+        bot['energy'] += 30
         # bot['age'] -= 5
         ans = 1
     else:
@@ -295,6 +295,18 @@ def watch(bot, side):
     return ans
 
 
+def clear_cells(cells):
+    global live, x_size, y_size
+    colored_cells = []
+    for bots in live:
+        colored_cells.append(bots['coord'])
+    colored_cells.extend(food_coord)
+    for j in range(y_size):
+        for i in range(x_size):
+            if [i, j] not in colored_cells:
+                cells[i][j]['background'] = 'white'
+
+
 def step():
     global num_steps
     _ = live.copy()
@@ -354,7 +366,7 @@ def step():
                 bots['UTK'] += ans
                 pull.remove(bots)
             elif bots['gen'][k] == 27:
-                bots['age'] -= 1
+                bots['age'] -= 5
                 rdy += 1
                 bots['UTK'] += 1
                 pull.remove(bots)
@@ -365,15 +377,22 @@ def step():
                     bots['UTK'] += ans
                 elif bots['gen'][k] == 25:                  #проверка хп
                     k_next = k + 1
-                    if k_next > 63:
-                        k_next -= 63
+                    if k_next > (len_of_code-1):
+                        k_next -= (len_of_code-1)
 
-                    if bots['energy'] > bots['gen'][k_next]:
+                    if bots['energy'] > int(bots['gen'][k_next]*500/63):
                         bots['UTK'] += 2
-                    elif bots['energy'] > bots['gen'][k_next]:
-                        bots['UTK'] += 3
                     else:
-                        bots['UTK'] += 4
+                        bots['UTK'] += 3
+                elif bots['gen'][k] == 28:                  #проверка возраста
+                    k_next = k + 1
+                    if k_next > (len_of_code-1):
+                        k_next -= (len_of_code-1)
+
+                    if bots['age'] > int(bots['gen'][k_next]*100/63):
+                        bots['UTK'] += 2
+                    else:
+                        bots['UTK'] += 3
                 else:                                       #значения повышают УТК
                     bots['UTK'] += bots['gen'][k]
 
@@ -391,7 +410,7 @@ def step():
             if ans == 2:                              #принудительное деление в случайную сторону
                 bots['energy'] -= 20
 
-        if bots['energy'] <= 0 or bots['energy'] >= 1000 or bots['age'] >= 100:
+        if bots['energy'] <= 0 or bots['energy'] >= 500 or bots['age'] >= 200:
             cells[x][y]['background'] = 'white'
             live.remove(bots)
     for bots in live:
@@ -402,13 +421,45 @@ def step():
 
     num_steps += 1
 
+def statistic(_live):
+    max_energy = 0
+    avg_energy = 0
+    max_age = 0
+    min_age = live[-1]['age']
+    summ_energy = 0
+    for bots in _live:
+        if bots['energy'] > max_energy:
+            max_energy = bots['energy']
+        summ_energy += bots['energy']
+        if bots['age'] > max_age:
+            max_age = bots['age']
+        if bots['age'] < min_age:
+            min_age = bots['age']
+    avg_energy = int(summ_energy/len(_live))
+    stats = (max_energy, avg_energy, max_age,  min_age)
+    return stats
+
 
 def main():
+    global num_steps, num_world
     step()
+    stats = statistic(live)
+
     step_lbl.configure(text=f"Count of steps:{num_steps - 1}")
     live_lbl.configure(text=f'Count of lives:{len(live)}')
+    max_energy_lbl['text'] = f'Max energy: {stats[0]}'
+    avg_energy_lbl['text'] = f'Avg energy: {stats[1]}'
+    max_age_lbl['text'] = f'Max age: {stats[2]}'
+    min_age_lbl['text'] = f'Min age: {stats[3]}'
     if len(live) < 250:
         time.sleep(0.05)
+    if num_steps % 150 == 0:
+        clear_cells(cells)
+    if len(live) == 0:
+        crt_live(1500)
+        num_steps = 0
+        num_world += 1
+        world_lbl.configure(text=f'# of world:{num_world}')
     window.update()
 
 
@@ -433,32 +484,76 @@ window = Tk()
 window.title("Симулирование эволюции")
 window.geometry('1920x1600')
 #create cell
-crt_cell(50, 80)
+cells = crt_cell(50, 80)
 live = []
 
 #buttons and labels
-step_btn = Button(text='START/STOP', command=button)
+step_btn = Button(text='START/STOP',
+                  command=button
+                  )
+
+
+txt_btn = Button(text='copy to txt',
+                 command=life_to_txt
+                 )
+
+
+step_lbl = Label(window,
+                 font=("Arial Bold", 14),
+                 text='Count of steps'
+                 )
+
+world_lbl = Label(window,
+                 font=("Arial Bold", 14),
+                 text='# of world: 0'
+                 )
+
+max_energy_lbl = Label(window,
+                 font=("Arial Bold", 12),
+                 text='max_energy: 0'
+                 )
+avg_energy_lbl = Label(window,
+                 font=("Arial Bold", 12),
+                 text='avg_energy: 0'
+                 )
+max_age_lbl = Label(window,
+                 font=("Arial Bold", 12),
+                 text='max_age: 0'
+                 )
+min_age_lbl = Label(window,
+                 font=("Arial Bold", 12),
+                 text='min_age: 0'
+                 )
+live_lbl = Label(
+    window,
+    font=("Arial Bold", 14),
+    text=f'Count of lives:{len(live)}'
+    )
+
 step_btn.grid(row=51, column=81)
-
-txt_btn = Button(text='copy to txt', command=life_to_txt)
 txt_btn.grid(row=52, column=82)
-
-step_lbl = Label(window, font=("Arial Bold", 14), text='Count of steps')
+world_lbl.place(x=1600, y=100)
 step_lbl.place(x=1600, y=200)
-live_lbl = Label(window, font=("Arial Bold", 14), text=f'Count of lives:{len(live)}')
-live_lbl.place(x=1600, y=400)
 
+live_lbl.place(x=1600, y=400)
+max_energy_lbl.place(x=1600, y=440)
+avg_energy_lbl.place(x=1600, y=465)
+min_age_lbl.place(x=1600, y=490)
+max_age_lbl.place(x=1600, y=515)
 
 #rules
 step_energy = 1
 food_color = get_hex((150, 150, 255))
-len_of_code = 128
+len_of_code = 64
 start_hp = 10
 
 print('Добро пожаловать в симуляцию эволюции v0.1')
 
-create_food('full')
+food_coord = create_food('full')
 num_steps = 0
+num_world = 0
+
+
 crt_live(int(input('Введите количество организмов:')))
 print('Создание окна отображения(5-10 сек)')
 
