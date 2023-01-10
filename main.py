@@ -158,7 +158,7 @@ def create_food(count_of_food=10):
 
 
 def photosynth(bot):
-    if 50 > bot['coord'][0] > 30:
+    if 50 > bot['coord'][0] > 35 or 15 > bot['coord'][0] > 0:
         bot['energy'] += 20
         # bot['age'] -= 5
         ans = 1
@@ -205,6 +205,7 @@ def move(bot, side):
 
 
 def eat(bot, side):
+    global live
     coord = bot['coord'].copy()
     _ = d.get(side)
     xy = _.copy()
@@ -244,12 +245,21 @@ def eat(bot, side):
                     bot['energy'] += int(bots['energy']/10) + 20
                     # bot['age'] -= 1
                     live.remove(bots)
-                    # change_r = 10
-                    # if bot['r'] + change_r >= 255:
-                    bot['r'] = 255
-                    bot['g'] = 0
-                    # else:
-                    #     bot['r'] += change_r
+
+                    change_r = 50
+                    if bot['g'] - change_r <= 30:
+                        bot['g'] = 30
+                    else:
+                        bot['g'] -= change_r
+                    if bot['b'] - change_r <= 30:
+                        bot['b'] = 30
+                    else:
+                        bot['b'] -= change_r
+                    if bot['r'] + change_r >= 255:
+                        bot['r'] = 255
+                    else:
+                        bot['r'] += change_r
+
                     result = 4
                     break
 
@@ -343,6 +353,11 @@ def step():
                     bots['energy'] -= 20
                 bots['UTK'] += ans
                 pull.remove(bots)
+            elif bots['gen'][k] == 27:
+                bots['age'] -= 1
+                rdy += 1
+                bots['UTK'] += 1
+                pull.remove(bots)
             else:
                 bots['anticycle'] += 1
                 if 16 <= bots['gen'][k] <= 23:             #смотреть, УТК empty+=1 enemy+=2 eat+=3
@@ -392,8 +407,8 @@ def main():
     step()
     step_lbl.configure(text=f"Count of steps:{num_steps - 1}")
     live_lbl.configure(text=f'Count of lives:{len(live)}')
-    if len(live) < 500:
-        time.sleep(0.1)
+    if len(live) < 250:
+        time.sleep(0.05)
     window.update()
 
 
