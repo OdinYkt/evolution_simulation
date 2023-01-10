@@ -240,12 +240,11 @@ def eat(bot, side):
                     if dif == [1] or dif == [-1] or dif == []:
                         result = 3
                         break
-
                     cells[x][y]['background'] = 'white'
                     bot['energy'] += int(bots['energy']/10) + 20
                     # bot['age'] -= 1
                     live.remove(bots)
-
+                    move(bot, side)
                     change_r = 50
                     if bot['g'] - change_r <= 30:
                         bot['g'] = 30
@@ -298,8 +297,9 @@ def watch(bot, side):
 def clear_cells(cells):
     global live, x_size, y_size
     colored_cells = []
-    for bots in live:
-        colored_cells.append(bots['coord'])
+    if live:
+        for bots in live:
+            colored_cells.append(bots['coord'])
     colored_cells.extend(food_coord)
     for j in range(y_size):
         for i in range(x_size):
@@ -405,7 +405,7 @@ def step():
         bots['energy'] -= step_energy
         x = bots['coord'][0]
         y = bots['coord'][1]
-        if bots['energy'] >= 120:
+        if bots['energy'] >= 250:
             ans = cell_division(bots, randrange(0, 8), randrange(0, 127))
             if ans == 2:                              #принудительное деление в случайную сторону
                 bots['energy'] -= 20
@@ -425,17 +425,19 @@ def statistic(_live):
     max_energy = 0
     avg_energy = 0
     max_age = 0
-    min_age = live[-1]['age']
+    min_age = 0
     summ_energy = 0
-    for bots in _live:
-        if bots['energy'] > max_energy:
-            max_energy = bots['energy']
-        summ_energy += bots['energy']
-        if bots['age'] > max_age:
-            max_age = bots['age']
-        if bots['age'] < min_age:
-            min_age = bots['age']
-    avg_energy = int(summ_energy/len(_live))
+    if live:
+        min_age = live[-1]['age']
+        for bots in _live:
+            if bots['energy'] > max_energy:
+                max_energy = bots['energy']
+            summ_energy += bots['energy']
+            if bots['age'] > max_age:
+                max_age = bots['age']
+            if bots['age'] < min_age:
+                min_age = bots['age']
+        avg_energy = int(summ_energy/len(_live))
     stats = (max_energy, avg_energy, max_age,  min_age)
     return stats
 
@@ -463,6 +465,15 @@ def main():
     window.update()
 
 
+def new_world():
+    global num_steps, num_world
+    live.clear()
+    clear_cells(cells)
+    crt_live(1500)
+    num_steps = 0
+    num_world += 1
+    world_lbl.configure(text=f'# of world:{num_world}')
+
 
 def button():
     global start_simulation
@@ -486,7 +497,7 @@ window.geometry('1920x1600')
 #create cell
 cells = crt_cell(50, 80)
 live = []
-
+###############
 #buttons and labels
 step_btn = Button(text='START/STOP',
                   command=button
@@ -496,8 +507,10 @@ step_btn = Button(text='START/STOP',
 txt_btn = Button(text='copy to txt',
                  command=life_to_txt
                  )
-
-
+new_world_btn = Button(text='new world',
+                 command=new_world
+                 )
+###############
 step_lbl = Label(window,
                  font=("Arial Bold", 14),
                  text='Count of steps'
@@ -529,9 +542,10 @@ live_lbl = Label(
     font=("Arial Bold", 14),
     text=f'Count of lives:{len(live)}'
     )
-
+###############
 step_btn.grid(row=51, column=81)
-txt_btn.grid(row=52, column=82)
+txt_btn.grid(row=52, column=81)
+new_world_btn.grid(row=51, column=82)
 world_lbl.place(x=1600, y=100)
 step_lbl.place(x=1600, y=200)
 
@@ -540,7 +554,7 @@ max_energy_lbl.place(x=1600, y=440)
 avg_energy_lbl.place(x=1600, y=465)
 min_age_lbl.place(x=1600, y=490)
 max_age_lbl.place(x=1600, y=515)
-
+###############
 #rules
 step_energy = 1
 food_color = get_hex((150, 150, 255))
