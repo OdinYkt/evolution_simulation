@@ -2,6 +2,8 @@
 
 Small project 4fun.\
  World of bots which are controlled by the gen. Gen it's array of numbers [0..127]. 
+## Presentation 
+https://docs.google.com/presentation/d/1P1iHrrFalPO6nx_WUGZkcsNL9sUnB3_9exGYmODzlCg/edit?usp=sharing
 
 ## Libraries
 ```python
